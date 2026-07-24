@@ -459,6 +459,12 @@
   .level-btn.lv-fast{border-color:rgba(180,139,255,.5);}
   .level-btn.lv-fast:active, .level-btn.lv-fast:hover{background:rgba(180,139,255,.15);}
 
+  .level-btn.selected{border-width:3px;}
+  .level-btn.lv-over.selected{background:rgba(255,95,109,.22); border-color:var(--bad);}
+  .level-btn.lv-normal.selected{background:rgba(124,140,255,.22); border-color:var(--accent);}
+  .level-btn.lv-light.selected{background:rgba(79,214,122,.22); border-color:var(--good);}
+  .level-btn.lv-fast.selected{background:rgba(180,139,255,.22); border-color:var(--fast);}
+
   .empty-msg{color:var(--muted); font-size:13px; text-align:center; padding:16px 0;}
 </style>
 </head>
@@ -474,6 +480,7 @@
 
 <nav>
   <button data-view="char" class="active">キャラクター</button>
+  <button data-view="record">記録</button>
   <button data-view="cal">カレンダー</button>
   <button data-view="settings">設定</button>
 </nav>
@@ -498,8 +505,6 @@
       </div>
 
       <div class="badges" id="badge-row"></div>
-
-      <button class="quick-log-btn" id="btn-log-today">今日の食事を記録する</button>
     </div>
 
     <div class="card">
@@ -511,7 +516,6 @@
       <div class="expbar-outer" id="weight-progress-outer"><div class="expbar-inner" id="weight-progress-bar" style="background:linear-gradient(90deg,var(--good),#8be8a4);"></div></div>
       <div class="expbar-label" id="weight-progress-label"></div>
       <p class="setting-note" id="weight-reference-note"></p>
-      <button class="quick-log-btn" id="btn-log-weight-today">今日の体重を記録する</button>
     </div>
 
     <div class="card">
@@ -521,6 +525,44 @@
         その日「食べ過ぎ」が無かった日は <b style="color:var(--good)">GOOD</b> でEXPが貯まり進化に近づく。<br>
         「食べ過ぎ」が1回あった日は <b style="color:var(--warn)">WARN</b>。設定回数以上「食べ過ぎ」た「ドカ食い」の日は <b style="color:var(--bad)">BAD</b> でEXPが減り、連続記録もリセット。ドカ食いが続くと見た目も荒れていく。
       </p>
+    </div>
+  </section>
+
+  <!-- RECORD VIEW -->
+  <section class="view" id="view-record">
+    <div class="card">
+      <h2>記録 (<span id="record-date-label"></span>)</h2>
+      <div class="day-status-banner" id="record-status-banner"></div>
+    </div>
+
+    <div class="card">
+      <h2>体重</h2>
+      <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
+        <label for="record-weight-input">体重</label>
+        <input type="number" step="0.1" min="1" id="record-weight-input" placeholder="未記録">
+        <span class="unit">kg</span>
+      </div>
+      <div class="setting-note" id="record-weight-note"></div>
+      <button class="quick-log-btn" id="record-weight-save">保存する</button>
+    </div>
+
+    <div class="card">
+      <h2>食事</h2>
+      <div id="record-meal-entries-list"></div>
+      <div class="add-meal-box">
+        <h4>食事を追加</h4>
+        <div class="time-row">
+          <label for="record-meal-time">時間</label>
+          <input type="time" id="record-meal-time">
+        </div>
+        <div class="level-grid" id="record-level-grid">
+          <button class="level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
+          <button class="level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
+          <button class="level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
+          <button class="level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
+        </div>
+        <button class="quick-log-btn" id="record-meal-save">保存する</button>
+      </div>
     </div>
   </section>
 
@@ -585,6 +627,7 @@
       <p class="setting-note" id="settings-reference-note">
         年齢と身長を入力すると、目安体重が表示されます。
       </p>
+      <button class="quick-log-btn" id="save-profile">保存する</button>
     </div>
     <div class="card">
       <h2>ドカ食い判定</h2>
@@ -595,6 +638,7 @@
       <p class="setting-note">
         例: 2回に設定すると、「食べ過ぎ」が1回だけの日は「やや注意(WARN)」、2回以上の日は「ドカ食い(BAD)」としてキャラクターの見た目に影響します。「食べ過ぎ」が0回の日は「軽め」「絶食」「普通」がいくつあっても達成(GOOD)扱いです。
       </p>
+      <button class="quick-log-btn" id="save-binge-threshold">保存する</button>
     </div>
     <div class="card">
       <h2>週間・月間の目標</h2>
@@ -609,6 +653,7 @@
       <p class="setting-note">
         カレンダーページの上部に、今週・今月の「ドカ食い」日数がこの目標に収まっているかを表示します。
       </p>
+      <button class="quick-log-btn" id="save-goals">保存する</button>
     </div>
     <div class="card">
       <h2>データ管理</h2>
@@ -626,14 +671,15 @@
       <button id="modal-close">✕</button>
     </div>
 
-    <div class="weight-row" style="flex-wrap:wrap;">
+    <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
       <label for="modal-weight-input">体重</label>
       <input type="number" step="0.1" min="1" id="modal-weight-input" placeholder="未記録">
       <span class="unit">kg</span>
-      <div class="setting-note" id="modal-weight-note" style="width:100%; margin-top:6px;"></div>
     </div>
+    <div class="setting-note" id="modal-weight-note"></div>
+    <button class="quick-log-btn" id="modal-weight-save" style="margin-top:8px;">保存する</button>
 
-    <div class="day-status-banner" id="day-status-banner"></div>
+    <div class="day-status-banner" id="day-status-banner" style="margin-top:16px;"></div>
 
     <div id="meal-entries-list"></div>
 
@@ -643,12 +689,13 @@
         <label for="new-meal-time">時間</label>
         <input type="time" id="new-meal-time">
       </div>
-      <div class="level-grid">
+      <div class="level-grid" id="modal-level-grid">
         <button class="level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
         <button class="level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
         <button class="level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
         <button class="level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
       </div>
+      <button class="quick-log-btn" id="modal-meal-save">保存する</button>
     </div>
   </div>
 </div>
@@ -895,7 +942,6 @@ function renderCharacterSVG(charState){
   if(stageIdx===0){
     return `<svg viewBox="0 0 220 220" width="100%" height="100%">
       <ellipse cx="110" cy="120" rx="70" ry="85" fill="${colors.body}" stroke="${colors.body2}" stroke-width="4"/>
-      <ellipse cx="90" cy="90" rx="14" ry="8" fill="#ffffff" opacity="0.35"/>
       ${eyesFor(charState.mood)}
     </svg>`;
   }
@@ -1110,45 +1156,46 @@ function renderSettings(){
     ? `目安体重: ${ref.low.toFixed(1)}kg 〜 ${ref.high.toFixed(1)}kg (医学的な診断ではなく参考値です)`
     : "年齢(18歳以上)と身長を入力すると、目安体重が表示されます。";
 }
-document.getElementById("set-age").addEventListener("change", (e)=>{
-  const v = parseInt(e.target.value, 10);
-  state.profile.age = isNaN(v) ? null : v;
+function previewReferenceNote(){
+  const age = parseInt(document.getElementById("set-age").value, 10);
+  const height = parseFloat(document.getElementById("set-height").value);
+  const ref = referenceWeightRange(isNaN(height)?null:height, isNaN(age)?null:age);
+  document.getElementById("settings-reference-note").textContent = ref
+    ? `目安体重: ${ref.low.toFixed(1)}kg 〜 ${ref.high.toFixed(1)}kg (医学的な診断ではなく参考値です)`
+    : "年齢(18歳以上)と身長を入力すると、目安体重が表示されます。";
+}
+document.getElementById("set-age").addEventListener("input", previewReferenceNote);
+document.getElementById("set-height").addEventListener("input", previewReferenceNote);
+
+document.getElementById("save-profile").addEventListener("click", ()=>{
+  const age = parseInt(document.getElementById("set-age").value, 10);
+  const height = parseFloat(document.getElementById("set-height").value);
+  const goalWeight = parseFloat(document.getElementById("set-goal-weight").value);
+  state.profile.age = isNaN(age) ? null : age;
+  state.profile.heightCm = isNaN(height) ? null : height;
+  state.profile.goalWeight = isNaN(goalWeight) ? null : goalWeight;
   saveState();
   renderAll();
 });
-document.getElementById("set-height").addEventListener("change", (e)=>{
-  const v = parseFloat(e.target.value);
-  state.profile.heightCm = isNaN(v) ? null : v;
-  saveState();
-  renderAll();
-});
-document.getElementById("set-goal-weight").addEventListener("change", (e)=>{
-  const v = parseFloat(e.target.value);
-  state.profile.goalWeight = isNaN(v) ? null : v;
-  saveState();
-  renderAll();
-});
-document.getElementById("set-binge-threshold").addEventListener("change", (e)=>{
-  const v = parseInt(e.target.value, 10);
-  if(isNaN(v) || v<1) return;
+
+document.getElementById("save-binge-threshold").addEventListener("click", ()=>{
+  const v = parseInt(document.getElementById("set-binge-threshold").value, 10);
+  if(isNaN(v) || v<1){ alert("1以上の数値を入力してください"); return; }
   state.settings.bingeThreshold = v;
   saveState();
   renderAll();
 });
-document.getElementById("set-weekly-target").addEventListener("change", (e)=>{
-  const v = parseInt(e.target.value, 10);
-  if(isNaN(v) || v<0) return;
-  state.settings.weeklyBingeTarget = v;
+
+document.getElementById("save-goals").addEventListener("click", ()=>{
+  const weekly = parseInt(document.getElementById("set-weekly-target").value, 10);
+  const monthly = parseInt(document.getElementById("set-monthly-target").value, 10);
+  if(isNaN(weekly) || weekly<0 || isNaN(monthly) || monthly<0){ alert("0以上の数値を入力してください"); return; }
+  state.settings.weeklyBingeTarget = weekly;
+  state.settings.monthlyBingeTarget = monthly;
   saveState();
   renderAll();
 });
-document.getElementById("set-monthly-target").addEventListener("change", (e)=>{
-  const v = parseInt(e.target.value, 10);
-  if(isNaN(v) || v<0) return;
-  state.settings.monthlyBingeTarget = v;
-  saveState();
-  renderAll();
-});
+
 document.getElementById("btn-reset-data").addEventListener("click", ()=>{
   if(confirm("すべての記録・設定を初期状態に戻します。よろしいですか？")){
     state = defaultState();
@@ -1197,11 +1244,12 @@ function openDayModal(dateStr){
   renderModalWeightNote();
 
   renderMealEntries();
+  clearSelectedLevel("modal-level-grid");
   document.getElementById("modal-overlay").classList.add("open");
 }
 
-document.getElementById("modal-weight-input").addEventListener("change", (e)=>{
-  const v = parseFloat(e.target.value);
+document.getElementById("modal-weight-save").addEventListener("click", ()=>{
+  const v = parseFloat(document.getElementById("modal-weight-input").value);
   if(isNaN(v) || v<=0){
     delete state.weights[modalDateStr];
   }else{
@@ -1222,10 +1270,11 @@ document.getElementById("modal-overlay").addEventListener("click", (e)=>{
   if(e.target.id==="modal-overlay") closeDayModal();
 });
 
-function renderMealEntries(){
-  const entries = dayEntries(modalDateStr).slice().sort((a,b)=> a.time.localeCompare(b.time));
+// ---------- shared: meal entry list + level selection ----------
+function renderMealEntriesInto(dateStr, listElId, onChange){
+  const entries = dayEntries(dateStr).slice().sort((a,b)=> a.time.localeCompare(b.time));
 
-  const listBox = document.getElementById("meal-entries-list");
+  const listBox = document.getElementById(listElId);
   listBox.innerHTML = "";
   if(entries.length===0){
     listBox.innerHTML = `<div class="empty-msg">まだ記録がありません。下から食事を追加してください</div>`;
@@ -1240,42 +1289,116 @@ function renderMealEntries(){
         <button class="del" data-id="${e.id}">🗑</button>
       `;
       row.querySelector(".del").addEventListener("click", ()=>{
-        state.logs[modalDateStr] = dayEntries(modalDateStr).filter(x=>x.id!==e.id);
+        state.logs[dateStr] = dayEntries(dateStr).filter(x=>x.id!==e.id);
         saveState();
-        renderMealEntries();
-        renderCalendar();
-        renderCharacterView();
+        onChange();
       });
       listBox.appendChild(row);
     });
   }
+}
 
-  const banner = document.getElementById("day-status-banner");
-  const status = dayStatus(modalDateStr);
+function updateStatusBanner(dateStr, bannerElId){
+  const banner = document.getElementById(bannerElId);
+  const status = dayStatus(dateStr);
   banner.textContent = STATUS_BANNER_TEXT[status];
   banner.className = "day-status-banner banner-" + status;
 }
 
-document.querySelectorAll(".level-btn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const level = btn.dataset.level;
-    const time = document.getElementById("new-meal-time").value || nowTimeStr();
-    if(!state.logs[modalDateStr]) state.logs[modalDateStr] = [];
-    state.logs[modalDateStr].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
-    saveState();
+function clearSelectedLevel(gridId){
+  document.querySelectorAll(`#${gridId} .level-btn`).forEach(b=> b.classList.remove("selected"));
+}
+function getSelectedLevel(gridId){
+  const btn = document.querySelector(`#${gridId} .level-btn.selected`);
+  return btn ? btn.dataset.level : null;
+}
+function wireLevelGrid(gridId){
+  document.querySelectorAll(`#${gridId} .level-btn`).forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const alreadySelected = btn.classList.contains("selected");
+      clearSelectedLevel(gridId);
+      if(!alreadySelected) btn.classList.add("selected");
+    });
+  });
+}
+wireLevelGrid("modal-level-grid");
+wireLevelGrid("record-level-grid");
+
+function renderMealEntries(){
+  renderMealEntriesInto(modalDateStr, "meal-entries-list", ()=>{
     renderMealEntries();
     renderCalendar();
     renderCharacterView();
   });
+  updateStatusBanner(modalDateStr, "day-status-banner");
+}
+
+document.getElementById("modal-meal-save").addEventListener("click", ()=>{
+  const level = getSelectedLevel("modal-level-grid");
+  if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
+  const time = document.getElementById("new-meal-time").value || nowTimeStr();
+  if(!state.logs[modalDateStr]) state.logs[modalDateStr] = [];
+  state.logs[modalDateStr].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
+  saveState();
+  clearSelectedLevel("modal-level-grid");
+  renderMealEntries();
+  renderCalendar();
+  renderCharacterView();
 });
 
-document.getElementById("btn-log-today").addEventListener("click", ()=>{
-  switchView("cal");
-  openDayModal(todayStr());
+// ---------- record page (today only) ----------
+function renderRecordPage(){
+  const today = todayStr();
+  const d = new Date();
+  document.getElementById("record-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+  document.getElementById("record-weight-input").value = state.weights[today] ?? "";
+  document.getElementById("record-meal-time").value = nowTimeStr();
+
+  renderRecordWeightNote();
+  renderMealEntriesInto(today, "record-meal-entries-list", renderRecordPage);
+  updateStatusBanner(today, "record-status-banner");
+}
+
+function renderRecordWeightNote(){
+  const note = document.getElementById("record-weight-note");
+  const w = state.weights[todayStr()];
+  const goal = state.profile.goalWeight;
+  if(w==null || goal==null || isNaN(goal)){
+    note.textContent = "";
+    return;
+  }
+  const diff = w - goal;
+  note.textContent = Math.abs(diff)<0.05
+    ? "目標体重ちょうどです"
+    : `目標まで ${Math.abs(diff).toFixed(1)}kg (${diff>0 ? "減量" : "増量"})`;
+}
+
+document.getElementById("record-weight-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const v = parseFloat(document.getElementById("record-weight-input").value);
+  if(isNaN(v) || v<=0){
+    delete state.weights[today];
+  }else{
+    state.weights[today] = v;
+  }
+  saveState();
+  renderRecordWeightNote();
+  renderWeightCard();
+  renderCalendar();
 });
-document.getElementById("btn-log-weight-today").addEventListener("click", ()=>{
-  switchView("cal");
-  openDayModal(todayStr());
+
+document.getElementById("record-meal-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const level = getSelectedLevel("record-level-grid");
+  if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
+  const time = document.getElementById("record-meal-time").value || nowTimeStr();
+  if(!state.logs[today]) state.logs[today] = [];
+  state.logs[today].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
+  saveState();
+  clearSelectedLevel("record-level-grid");
+  renderRecordPage();
+  renderCalendar();
+  renderCharacterView();
 });
 
 // ---------- nav ----------
@@ -1287,6 +1410,7 @@ function switchView(name){
     v.classList.toggle("active", v.id==="view-"+name);
   });
   if(name==="cal") renderCalendar();
+  if(name==="record") renderRecordPage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
   b.addEventListener("click", ()=> switchView(b.dataset.view));
@@ -1298,6 +1422,7 @@ function renderAll(){
   renderWeightCard();
   renderCalendar();
   renderSettings();
+  renderRecordPage();
 }
 
 renderAll();
