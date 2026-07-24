@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トウシツモン - 糖質管理たまご</title>
+<style>
+  :root{
+    --bg:#0f1226;
+    --panel:#1b1f3b;
+    --panel2:#232849;
+    --text:#eef0ff;
+    --muted:#9aa0c7;
+    --good:#4fd67a;
+    --warn:#ffc84f;
+    --bad:#ff5f6d;
+    --accent:#7c8cff;
+    --border:#2e3460;
+    --fast:#b48bff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:linear-gradient(180deg,#0f1226,#141936);
+    color:var(--text);
+    min-height:100vh;
+  }
+  header{
+    padding:16px 20px 8px;
+    text-align:center;
+  }
+  header h1{
+    margin:0;
+    font-size:20px;
+    letter-spacing:1px;
+  }
+  header p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:12px;
+  }
+  nav{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    padding:10px 12px;
+    flex-wrap:wrap;
+  }
+  nav button{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--muted);
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  nav button.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  main{
+    max-width:720px;
+    margin:0 auto;
+    padding:8px 16px 60px;
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    margin:0 0 10px;
+    font-size:15px;
+    color:var(--muted);
+    font-weight:600;
+  }
+
+  /* ---- character ---- */
+  .char-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .char-stage{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:2px;
+  }
+  .char-name{
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .char-svg-box{
+    width:220px;
+    height:220px;
+  }
+  .mood-tag{
+    display:inline-block;
+    margin-top:6px;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+  }
+  .mood-happy{background:rgba(79,214,122,.15); color:var(--good);}
+  .mood-tired{background:rgba(255,200,79,.15); color:var(--warn);}
+  .mood-corrupted{background:rgba(255,95,109,.15); color:var(--bad);}
+
+  .stat-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    width:100%;
+  }
+  .stat-box{
+    flex:1;
+    background:var(--panel2);
+    border-radius:12px;
+    padding:10px;
+    text-align:center;
+  }
+  .stat-box .num{font-size:18px;font-weight:700;}
+  .stat-box .label{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  .expbar-outer{
+    width:100%;
+    height:10px;
+    background:var(--panel2);
+    border-radius:999px;
+    margin-top:14px;
+    overflow:hidden;
+  }
+  .expbar-inner{
+    height:100%;
+    background:linear-gradient(90deg,var(--accent),#a2b0ff);
+    transition:width .4s;
+  }
+  .expbar-label{font-size:11px;color:var(--muted); margin-top:4px;}
+
+  .badges{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .badge{
+    width:36px;height:36px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    opacity:.3;
+  }
+  .badge.on{
+    opacity:1;
+    background:linear-gradient(135deg,#ffd76a,#ff9a6a);
+    color:#3a2200;
+    border-color:transparent;
+  }
+
+  .quick-log-btn{
+    margin-top:16px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    width:100%;
+  }
+
+  /* ---- calendar ---- */
+  .cal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cal-head button{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:6px 10px;
+    cursor:pointer;
+  }
+  .cal-head .month-label{font-size:15px;font-weight:700;}
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .cal-grid .wd{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    padding-bottom:4px;
+  }
+  .cal-cell{
+    min-height:74px;
+    border-radius:10px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:12px;
+    position:relative;
+    padding:4px 2px;
+  }
+  .cal-cell.empty{visibility:hidden; cursor:default;}
+  .cal-cell.today{border-color:var(--accent);}
+  .cal-cell .d{font-weight:600;}
+  .cal-cell .dot{
+    width:8px;height:8px;border-radius:50%;
+    margin-top:3px;
+  }
+  .dot-good{background:var(--good);}
+  .dot-warn{background:var(--warn);}
+  .dot-bad{background:var(--bad);}
+  .dot-none{background:transparent;}
+
+  .legend{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    margin-top:12px;
+    font-size:11px;
+    color:var(--muted);
+    flex-wrap:wrap;
+  }
+  .legend span{display:flex;align-items:center;gap:4px;}
+  .legend .dot{width:8px;height:8px;border-radius:50%;}
+
+  .cal-cell .mini-avatar{
+    width:26px;height:26px;
+    margin-top:2px;
+    border-radius:50%;
+    padding:2px;
+    box-sizing:border-box;
+  }
+  .cal-cell .mini-avatar.ring-good{box-shadow:0 0 0 2px var(--good);}
+  .cal-cell .mini-avatar.ring-warn{box-shadow:0 0 0 2px var(--warn);}
+  .cal-cell .mini-avatar.ring-bad{box-shadow:0 0 0 2px var(--bad);}
+
+  .cal-weight{
+    margin-top:2px;
+    font-size:9.5px;
+    line-height:1.25;
+    color:var(--muted);
+    text-align:center;
+  }
+  .cal-weight .val{font-variant-numeric:tabular-nums; font-weight:700;}
+  .cal-weight .diff{display:block; font-size:8.5px;}
+  .cal-weight .diff.on-target{color:var(--good); font-weight:700;}
+
+  .goal-block{margin-top:10px;}
+  .goal-block:first-child{margin-top:0;}
+  .goal-head{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    margin-bottom:6px;
+  }
+  .goal-head .goal-title{font-weight:700;}
+  .goal-head .goal-num{color:var(--muted);}
+  .bar-outer{
+    height:8px;
+    background:var(--panel2);
+    border-radius:99px;
+    overflow:hidden;
+  }
+  .bar-inner{height:100%; transition:width .3s;}
+
+  /* ---- settings ---- */
+  .setting-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+    gap:10px;
+  }
+  .setting-row:last-child{border-bottom:none;}
+  .setting-row span{font-size:13px;}
+  .setting-row input{
+    width:70px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:6px 8px;
+    text-align:right;
+  }
+  .setting-note{font-size:11px;color:var(--muted); margin-top:8px; line-height:1.6;}
+
+  /* ---- modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(6,8,20,.7);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:50;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--panel);
+    border-radius:20px 20px 0 0;
+    width:100%;
+    max-width:720px;
+    max-height:85vh;
+    overflow-y:auto;
+    padding:18px;
+    border:1px solid var(--border);
+    border-bottom:none;
+  }
+  .modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .modal-head h3{margin:0; font-size:16px;}
+  .modal-head button{
+    background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;
+  }
+  .day-status-banner{
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .banner-none{background:var(--panel2); color:var(--muted);}
+  .banner-good{background:rgba(79,214,122,.15); color:var(--good);}
+  .banner-warn{background:rgba(255,200,79,.15); color:var(--warn);}
+  .banner-bad{background:rgba(255,95,109,.15); color:var(--bad);}
+
+  .weight-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .weight-row label{font-size:13px; color:var(--muted); white-space:nowrap;}
+  .weight-row input[type=number]{
+    flex:1;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:14px;
+  }
+  .weight-row .unit{font-size:13px; color:var(--muted);}
+
+  .meal-entry{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 4px;
+    border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  .meal-entry:last-child{border-bottom:none;}
+  .meal-entry .time{
+    font-variant-numeric:tabular-nums;
+    color:var(--muted);
+    width:56px;
+  }
+  .meal-entry .level-chip{
+    flex:1;
+    margin:0 10px;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    display:inline-block;
+    width:fit-content;
+  }
+  .meal-entry .del{
+    background:none;border:none;color:var(--bad);cursor:pointer;font-size:16px;
+  }
+  .chip-over{background:rgba(255,95,109,.18); color:var(--bad);}
+  .chip-normal{background:rgba(124,140,255,.18); color:var(--accent);}
+  .chip-light{background:rgba(79,214,122,.18); color:var(--good);}
+  .chip-fast{background:rgba(180,139,255,.18); color:var(--fast);}
+
+  .add-meal-box{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .add-meal-box h4{
+    margin:0 0 8px;
+    font-size:13px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .time-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .time-row label{font-size:13px; color:var(--muted);}
+  .time-row input[type=time]{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:14px;
+    flex:1;
+  }
+  .level-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .level-btn{
+    border:2px solid var(--border);
+    background:var(--panel2);
+    color:var(--text);
+    border-radius:14px;
+    padding:14px 8px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+    line-height:1.6;
+  }
+  .level-btn .emoji{font-size:22px; display:block;}
+  .level-btn.lv-over{border-color:rgba(255,95,109,.5);}
+  .level-btn.lv-over:active, .level-btn.lv-over:hover{background:rgba(255,95,109,.15);}
+  .level-btn.lv-normal{border-color:rgba(124,140,255,.5);}
+  .level-btn.lv-normal:active, .level-btn.lv-normal:hover{background:rgba(124,140,255,.15);}
+  .level-btn.lv-light{border-color:rgba(79,214,122,.5);}
+  .level-btn.lv-light:active, .level-btn.lv-light:hover{background:rgba(79,214,122,.15);}
+  .level-btn.lv-fast{border-color:rgba(180,139,255,.5);}
+  .level-btn.lv-fast:active, .level-btn.lv-fast:hover{background:rgba(180,139,255,.15);}
+
+  .empty-msg{color:var(--muted); font-size:13px; text-align:center; padding:16px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥚 トウシツモン</h1>
+  <p>糖質・脂質のドカ食いを見張る、育成カレンダー</p>
+  <div id="storage-warning" style="display:none; margin:10px auto 0; max-width:500px; background:rgba(255,95,109,.15); color:var(--bad); border-radius:10px; padding:8px 12px; font-size:12px;">
+    この端末・ブラウザではデータを保存できません。記録が保持されない可能性があります。
+  </div>
+</header>
+
+<nav>
+  <button data-view="char" class="active">キャラクター</button>
+  <button data-view="cal">カレンダー</button>
+  <button data-view="settings">設定</button>
+</nav>
+
+<main>
+
+  <!-- CHARACTER VIEW -->
+  <section class="view active" id="view-char">
+    <div class="card char-wrap">
+      <div class="char-stage" id="char-stage-label"></div>
+      <div class="char-name" id="char-name-label"></div>
+      <div class="char-svg-box" id="char-svg-box"></div>
+      <div class="mood-tag" id="char-mood-tag"></div>
+
+      <div class="expbar-outer"><div class="expbar-inner" id="exp-bar"></div></div>
+      <div class="expbar-label" id="exp-label"></div>
+
+      <div class="stat-row">
+        <div class="stat-box"><div class="num" id="stat-streak">0</div><div class="label">連続達成日数</div></div>
+        <div class="stat-box"><div class="num" id="stat-longest">0</div><div class="label">最高連続記録</div></div>
+        <div class="stat-box"><div class="num" id="stat-exp">0</div><div class="label">累計EXP</div></div>
+      </div>
+
+      <div class="badges" id="badge-row"></div>
+
+      <button class="quick-log-btn" id="btn-log-today">今日の食事を記録する</button>
+    </div>
+
+    <div class="card">
+      <h2>体重の記録</h2>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num" id="weight-latest">--</div><div class="label" id="weight-latest-label">最新の体重</div></div>
+        <div class="stat-box"><div class="num" id="weight-goal-display">--</div><div class="label">目標体重</div></div>
+      </div>
+      <div class="expbar-outer" id="weight-progress-outer"><div class="expbar-inner" id="weight-progress-bar" style="background:linear-gradient(90deg,var(--good),#8be8a4);"></div></div>
+      <div class="expbar-label" id="weight-progress-label"></div>
+      <p class="setting-note" id="weight-reference-note"></p>
+      <button class="quick-log-btn" id="btn-log-weight-today">今日の体重を記録する</button>
+    </div>
+
+    <div class="card">
+      <h2>育成のしくみ</h2>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0;">
+        1食ごとに「食べ過ぎ・普通・軽め・絶食」を記録するだけ。<br>
+        その日「食べ過ぎ」が無かった日は <b style="color:var(--good)">GOOD</b> でEXPが貯まり進化に近づく。<br>
+        「食べ過ぎ」が1回あった日は <b style="color:var(--warn)">WARN</b>。設定回数以上「食べ過ぎ」た「ドカ食い」の日は <b style="color:var(--bad)">BAD</b> でEXPが減り、連続記録もリセット。ドカ食いが続くと見た目も荒れていく。
+      </p>
+    </div>
+  </section>
+
+  <!-- CALENDAR VIEW -->
+  <section class="view" id="view-cal">
+    <div class="card">
+      <h2>連続記録</h2>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num" id="cal-stat-streak">0</div><div class="label">連続達成日数</div></div>
+        <div class="stat-box"><div class="num" id="cal-stat-longest">0</div><div class="label">最高連続記録</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>今週・今月のドカ食い目標</h2>
+      <div class="goal-block">
+        <div class="goal-head"><span class="goal-title">今週</span><span class="goal-num" id="week-goal-text"></span></div>
+        <div class="bar-outer"><div class="bar-inner" id="week-goal-bar"></div></div>
+      </div>
+      <div class="goal-block">
+        <div class="goal-head"><span class="goal-title">今月</span><span class="goal-num" id="month-goal-text"></span></div>
+        <div class="bar-outer"><div class="bar-inner" id="month-goal-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cal-head">
+        <button id="cal-prev">◀</button>
+        <div class="month-label" id="cal-month-label"></div>
+        <button id="cal-next">▶</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="legend">
+        <span><i class="dot dot-good"></i>目標達成</span>
+        <span><i class="dot dot-warn"></i>やや超過</span>
+        <span><i class="dot dot-bad"></i>ドカ食い</span>
+        <span><i class="dot dot-none" style="border:1px solid var(--border)"></i>未記録</span>
+      </div>
+      <p class="setting-note" style="text-align:center;margin-top:10px;">
+        記録がある日は、その時点で育っていたキャラクターの姿がそのまま表示されます。過去にどこまで進化できたか振り返ってみましょう。<br>
+        体重を記録した日には体重も表示され、目標体重に近い日は緑色になります。
+      </p>
+    </div>
+  </section>
+
+  <!-- SETTINGS VIEW -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2>プロフィール</h2>
+      <div class="setting-row">
+        <span>年齢</span>
+        <input type="number" min="1" step="1" id="set-age">
+      </div>
+      <div class="setting-row">
+        <span>身長 (cm)</span>
+        <input type="number" min="1" step="0.1" id="set-height">
+      </div>
+      <div class="setting-row">
+        <span>目標体重 (kg)</span>
+        <input type="number" min="1" step="0.1" id="set-goal-weight">
+      </div>
+      <p class="setting-note" id="settings-reference-note">
+        年齢と身長を入力すると、目安体重が表示されます。
+      </p>
+    </div>
+    <div class="card">
+      <h2>ドカ食い判定</h2>
+      <div class="setting-row">
+        <span>1日に「食べ過ぎ」が何回以上で「ドカ食い」とみなすか</span>
+        <input type="number" min="1" step="1" id="set-binge-threshold">
+      </div>
+      <p class="setting-note">
+        例: 2回に設定すると、「食べ過ぎ」が1回だけの日は「やや注意(WARN)」、2回以上の日は「ドカ食い(BAD)」としてキャラクターの見た目に影響します。「食べ過ぎ」が0回の日は「軽め」「絶食」「普通」がいくつあっても達成(GOOD)扱いです。
+      </p>
+    </div>
+    <div class="card">
+      <h2>週間・月間の目標</h2>
+      <div class="setting-row">
+        <span>1週間に「ドカ食い」を何回まで許容するか</span>
+        <input type="number" min="0" step="1" id="set-weekly-target">
+      </div>
+      <div class="setting-row">
+        <span>1ヶ月に「ドカ食い」を何回まで許容するか</span>
+        <input type="number" min="0" step="1" id="set-monthly-target">
+      </div>
+      <p class="setting-note">
+        カレンダーページの上部に、今週・今月の「ドカ食い」日数がこの目標に収まっているかを表示します。
+      </p>
+    </div>
+    <div class="card">
+      <h2>データ管理</h2>
+      <button class="quick-log-btn" style="background:var(--bad);" id="btn-reset-data">すべてのデータをリセット</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- DAY LOG MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-date-label"></h3>
+      <button id="modal-close">✕</button>
+    </div>
+
+    <div class="weight-row" style="flex-wrap:wrap;">
+      <label for="modal-weight-input">体重</label>
+      <input type="number" step="0.1" min="1" id="modal-weight-input" placeholder="未記録">
+      <span class="unit">kg</span>
+      <div class="setting-note" id="modal-weight-note" style="width:100%; margin-top:6px;"></div>
+    </div>
+
+    <div class="day-status-banner" id="day-status-banner"></div>
+
+    <div id="meal-entries-list"></div>
+
+    <div class="add-meal-box">
+      <h4>食事を追加</h4>
+      <div class="time-row">
+        <label for="new-meal-time">時間</label>
+        <input type="time" id="new-meal-time">
+      </div>
+      <div class="level-grid">
+        <button class="level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
+        <button class="level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
+        <button class="level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
+        <button class="level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const STORE_KEY = "toshitsumon_v2";
+
+const LEVELS = {
+  over:   {label:"食べ過ぎ", emoji:"🍔", chipClass:"chip-over"},
+  normal: {label:"普通",     emoji:"🍚", chipClass:"chip-normal"},
+  light:  {label:"軽め",     emoji:"🥗", chipClass:"chip-light"},
+  fast:   {label:"絶食",     emoji:"💧", chipClass:"chip-fast"},
+};
+
+const DEFAULT_SETTINGS = { bingeThreshold: 2, weeklyBingeTarget: 2, monthlyBingeTarget: 5 };
+const DEFAULT_PROFILE = { age: null, heightCm: null, goalWeight: null };
+
+function defaultState(){
+  return {
+    logs: {},
+    weights: {},
+    settings: Object.assign({}, DEFAULT_SETTINGS),
+    profile: Object.assign({}, DEFAULT_PROFILE),
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultState(), parsed, {
+      logs: parsed.logs || {},
+      weights: parsed.weights || {},
+      settings: Object.assign({}, DEFAULT_SETTINGS, parsed.settings||{}),
+      profile: Object.assign({}, DEFAULT_PROFILE, parsed.profile||{}),
+    });
+  }catch(e){
+    return defaultState();
+  }
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    document.getElementById("storage-warning").style.display = "none";
+  }catch(e){
+    document.getElementById("storage-warning").style.display = "block";
+  }
+}
+
+let state = loadState();
+
+// ---------- date helpers ----------
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function todayStr(){ return fmtDate(new Date()); }
+function parseDateStr(s){
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+function nowTimeStr(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
+// ---------- day status ----------
+function dayEntries(dateStr){
+  return state.logs[dateStr] || [];
+}
+
+function dayOverCount(dateStr){
+  return dayEntries(dateStr).filter(e=>e.level==="over").length;
+}
+
+function dayStatus(dateStr){
+  const entries = dayEntries(dateStr);
+  if(entries.length===0) return "none";
+  const overCount = entries.filter(e=>e.level==="over").length;
+  const threshold = state.settings.bingeThreshold;
+  if(overCount===0) return "good";
+  if(overCount<threshold) return "warn";
+  return "bad";
+}
+
+// ---------- weight tracking ----------
+function targetBmiRange(age){
+  if(age==null || isNaN(age) || age<18) return null;
+  if(age<=49) return [18.5, 24.9];
+  if(age<=64) return [20.0, 24.9];
+  return [21.5, 24.9];
+}
+
+function referenceWeightRange(heightCm, age){
+  const range = targetBmiRange(age);
+  if(!heightCm || isNaN(heightCm) || !range) return null;
+  const h = heightCm/100;
+  return { low: range[0]*h*h, high: range[1]*h*h };
+}
+
+function sortedWeightDates(){
+  return Object.keys(state.weights).sort();
+}
+
+function weightCellHtml(dateStr){
+  const w = state.weights[dateStr];
+  if(w==null) return "";
+  const goal = state.profile.goalWeight;
+  if(goal==null || isNaN(goal)){
+    return `<div class="cal-weight"><span class="val">${w}</span></div>`;
+  }
+  const diff = w - goal;
+  const onTarget = Math.abs(diff) < 0.5;
+  const diffText = onTarget ? "目標達成" : `${diff>0?"+":""}${diff.toFixed(1)}`;
+  return `<div class="cal-weight"><span class="val">${w}</span><span class="diff${onTarget?" on-target":""}">${diffText}</span></div>`;
+}
+
+function computeWeightProgress(){
+  const dates = sortedWeightDates();
+  if(dates.length===0) return null;
+  const firstDate = dates[0], latestDate = dates[dates.length-1];
+  const first = state.weights[firstDate], latest = state.weights[latestDate];
+  const goal = state.profile.goalWeight;
+  let pct = null;
+  if(goal!=null && !isNaN(goal)){
+    if(first===goal){ pct = 100; }
+    else{
+      pct = ((first-latest)/(first-goal))*100;
+      pct = Math.max(0, Math.min(100, pct));
+    }
+  }
+  return {first, firstDate, latest, latestDate, goal, pct};
+}
+
+// ---------- character derivation ----------
+const STAGES = [
+  {key:"egg", name:"たまご", threshold:0},
+  {key:"baby", name:"ベビー", threshold:20},
+  {key:"rookie", name:"ロキ", threshold:60},
+  {key:"champion", name:"チャンピオン", threshold:150},
+  {key:"perfect", name:"パーフェクト", threshold:300},
+  {key:"mega", name:"メガ", threshold:600},
+];
+const BADGE_MILESTONES = [3,7,14,30,60,100];
+
+function allLoggedDatesSorted(){
+  return Object.keys(state.logs).filter(d=>state.logs[d] && state.logs[d].length>0).sort();
+}
+
+function computeCharacterState(cutoffDateStr){
+  const allDates = allLoggedDatesSorted();
+  const dates = cutoffDateStr ? allDates.filter(d=> d<=cutoffDateStr) : allDates;
+  let exp=0, streak=0, longestStreak=0;
+  const badgesEarned = new Set();
+  dates.forEach(d=>{
+    const st = dayStatus(d);
+    if(st==="good"){ exp+=12; streak+=1; }
+    else if(st==="warn"){ exp=Math.max(0,exp+3); }
+    else if(st==="bad"){ exp=Math.max(0,exp-20); streak=0; }
+    longestStreak = Math.max(longestStreak, streak);
+    BADGE_MILESTONES.forEach(m=>{ if(streak>=m) badgesEarned.add(m); });
+  });
+
+  let stageIdx=0;
+  for(let i=0;i<STAGES.length;i++){ if(exp>=STAGES[i].threshold) stageIdx=i; }
+  const stage = STAGES[stageIdx];
+  const nextStage = STAGES[stageIdx+1];
+
+  // mood based on the 7 calendar days ending at the reference date (today, unless a cutoff is given)
+  const refDate = cutoffDateStr ? parseDateStr(cutoffDateStr) : new Date();
+  let badCount=0, anyLogged=false;
+  for(let i=0;i<7;i++){
+    const d = new Date(refDate); d.setDate(d.getDate()-i);
+    const ds = fmtDate(d);
+    const st = dayStatus(ds);
+    if(st!=="none"){ anyLogged=true; if(st==="bad") badCount++; }
+  }
+  let mood = "happy";
+  if(anyLogged){
+    if(badCount>=3) mood="corrupted";
+    else if(badCount>=1) mood="tired";
+  }
+
+  return {exp, streak, longestStreak, badgesEarned, stage, stageIdx, nextStage, mood};
+}
+
+// ---------- SVG character rendering ----------
+const MOOD_COLORS = {
+  happy:    {body:"#6fe08a", body2:"#4fc76d", accent:"#ffe066"},
+  tired:    {body:"#b7b79a", body2:"#9b9b7f", accent:"#d8c98a"},
+  corrupted:{body:"#a15fc2", body2:"#7a3f9c", accent:"#5fd6c2"},
+};
+
+function eyesFor(mood){
+  if(mood==="happy") return `
+    <path d="M 82 100 Q 88 90 94 100" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M 126 100 Q 132 90 138 100" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(mood==="tired") return `
+    <line x1="80" y1="98" x2="96" y2="98" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+    <line x1="124" y1="98" x2="140" y2="98" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>`;
+  return `
+    <path d="M 80 92 L 96 104 M 96 92 L 80 104" stroke="#2a0a2a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 124 92 L 140 104 M 140 92 L 124 104" stroke="#2a0a2a" stroke-width="4" stroke-linecap="round"/>`;
+}
+
+function mouthFor(mood){
+  if(mood==="happy") return `<path d="M 96 122 Q 110 134 124 122" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(mood==="tired") return `<line x1="98" y1="126" x2="122" y2="126" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>`;
+  return `<path d="M 96 130 Q 110 118 124 130" stroke="#2a0a2a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+}
+
+function extrasFor(stageIdx, mood, colors){
+  let s = "";
+  if(stageIdx>=2){ // ears/antenna from rookie on
+    s += `<circle cx="70" cy="60" r="10" fill="${colors.body2}"/><circle cx="150" cy="60" r="10" fill="${colors.body2}"/>`;
+  }
+  if(stageIdx>=3){ // small wings from champion on
+    s += `<path d="M 40 110 Q 10 90 20 140 Q 45 140 40 110" fill="${colors.accent}" opacity="0.9"/>
+          <path d="M 180 110 Q 210 90 200 140 Q 175 140 180 110" fill="${colors.accent}" opacity="0.9"/>`;
+  }
+  if(stageIdx>=4){ // horn from perfect on
+    s += `<path d="M 110 40 L 100 65 L 120 65 Z" fill="${colors.accent}"/>`;
+  }
+  if(stageIdx>=5){ // crown / aura at mega
+    s += `<circle cx="110" cy="110" r="95" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.5"/>
+          <path d="M 90 30 L 100 45 L 110 25 L 120 45 L 130 30 L 125 55 L 95 55 Z" fill="#ffd76a"/>`;
+  }
+  if(mood==="corrupted"){
+    s += `<ellipse cx="150" cy="55" rx="14" ry="9" fill="#555" opacity="0.7"/>
+          <ellipse cx="162" cy="45" rx="10" ry="6" fill="#555" opacity="0.5"/>`;
+  }
+  return s;
+}
+
+function renderCharacterSVG(charState){
+  const colors = MOOD_COLORS[charState.mood];
+  const stageIdx = charState.stageIdx;
+  // egg stage: simple oval, no face
+  if(stageIdx===0){
+    return `<svg viewBox="0 0 220 220" width="100%" height="100%">
+      <ellipse cx="110" cy="120" rx="70" ry="85" fill="${colors.body}" stroke="${colors.body2}" stroke-width="4"/>
+      <ellipse cx="90" cy="90" rx="14" ry="8" fill="#ffffff" opacity="0.35"/>
+      ${eyesFor(charState.mood)}
+    </svg>`;
+  }
+  const bodyRy = charState.mood==="corrupted" ? 78 : 88;
+  const bodyRx = charState.mood==="corrupted" ? 90 : 78;
+  return `<svg viewBox="0 0 220 220" width="100%" height="100%">
+    <g>
+      ${stageIdx>=5 ? `<circle cx="110" cy="115" r="95" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.35"/>` : ""}
+      <ellipse cx="110" cy="122" rx="${bodyRx}" ry="${bodyRy}" fill="${colors.body}" stroke="${colors.body2}" stroke-width="4"/>
+      ${extrasFor(stageIdx, charState.mood, colors)}
+      <ellipse cx="90" cy="95" rx="16" ry="9" fill="#ffffff" opacity="0.3"/>
+      ${eyesFor(charState.mood)}
+      ${mouthFor(charState.mood)}
+      <ellipse cx="90" cy="115" rx="8" ry="5" fill="#ff9a9a" opacity="0.5"/>
+      <ellipse cx="130" cy="115" rx="8" ry="5" fill="#ff9a9a" opacity="0.5"/>
+    </g>
+  </svg>`;
+}
+
+// ---------- rendering: character view ----------
+function renderCharacterView(){
+  const cs = computeCharacterState();
+  document.getElementById("char-svg-box").innerHTML = renderCharacterSVG(cs);
+  document.getElementById("char-stage-label").textContent = `第${cs.stageIdx+1}段階`;
+  document.getElementById("char-name-label").textContent = cs.stage.name;
+
+  const moodTag = document.getElementById("char-mood-tag");
+  const moodLabel = {happy:"元気いっぱい", tired:"ちょっと疲れ気味", corrupted:"荒れ気味…食生活を見直そう"}[cs.mood];
+  moodTag.textContent = moodLabel;
+  moodTag.className = "mood-tag mood-" + cs.mood;
+
+  const next = cs.nextStage;
+  const barPct = next ? Math.min(100, Math.round((cs.exp - cs.stage.threshold) / (next.threshold - cs.stage.threshold) * 100)) : 100;
+  document.getElementById("exp-bar").style.width = barPct + "%";
+  document.getElementById("exp-label").textContent = next
+    ? `次の進化「${next.name}」まで あと ${Math.max(0,next.threshold - cs.exp)} EXP`
+    : `最終形態に到達しました`;
+
+  document.getElementById("stat-streak").textContent = cs.streak;
+  document.getElementById("stat-longest").textContent = cs.longestStreak;
+  document.getElementById("stat-exp").textContent = cs.exp;
+
+  const badgeRow = document.getElementById("badge-row");
+  badgeRow.innerHTML = "";
+  BADGE_MILESTONES.forEach(m=>{
+    const on = cs.badgesEarned.has(m);
+    const el = document.createElement("div");
+    el.className = "badge" + (on ? " on" : "");
+    el.title = `${m}日連続達成`;
+    el.textContent = m;
+    badgeRow.appendChild(el);
+  });
+}
+
+// ---------- rendering: weight card ----------
+function renderWeightCard(){
+  const dates = sortedWeightDates();
+  const goal = state.profile.goalWeight;
+
+  document.getElementById("weight-goal-display").textContent = (goal!=null && !isNaN(goal)) ? `${goal}kg` : "--";
+
+  const latestEl = document.getElementById("weight-latest");
+  const latestLabelEl = document.getElementById("weight-latest-label");
+  const progressBar = document.getElementById("weight-progress-bar");
+  const progressLabel = document.getElementById("weight-progress-label");
+  const refNote = document.getElementById("weight-reference-note");
+
+  if(dates.length===0){
+    latestEl.textContent = "--";
+    latestLabelEl.textContent = "最新の体重";
+    progressBar.style.width = "0%";
+    progressLabel.textContent = "まだ体重の記録がありません";
+  }else{
+    const progress = computeWeightProgress();
+    latestEl.textContent = `${progress.latest}kg`;
+    const d = parseDateStr(progress.latestDate);
+    latestLabelEl.textContent = `最新の体重(${d.getMonth()+1}/${d.getDate()})`;
+
+    if(progress.pct!=null){
+      progressBar.style.width = progress.pct + "%";
+      const diff = (progress.latest - progress.goal);
+      const diffAbs = Math.abs(diff).toFixed(1);
+      progressLabel.textContent = diff===0
+        ? "目標体重を達成しています！"
+        : `目標まであと ${diffAbs}kg (${diff>0 ? "減量" : "増量"})`;
+    }else{
+      progressBar.style.width = "0%";
+      progressLabel.textContent = "設定で目標体重を入力すると進捗が表示されます";
+    }
+  }
+
+  const ref = referenceWeightRange(state.profile.heightCm, state.profile.age);
+  refNote.textContent = ref
+    ? `年齢・身長からの目安体重: ${ref.low.toFixed(1)}kg 〜 ${ref.high.toFixed(1)}kg (医学的な診断ではなく参考値です)`
+    : "設定でプロフィール(年齢・身長)を入力すると目安体重が表示されます。";
+}
+
+// ---------- calendar ----------
+let calViewDate = new Date();
+
+function startOfWeek(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function countBadDaysInRange(startDate, endDate){
+  let count = 0;
+  const d = new Date(startDate);
+  while(d<=endDate){
+    if(dayStatus(fmtDate(d))==="bad") count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+
+function setGoalUI(textId, barId, count, target){
+  document.getElementById(textId).textContent = `${count} / ${target}回まで`;
+  const bar = document.getElementById(barId);
+  const pct = target>0 ? Math.min(100, (count/target)*100) : (count>0 ? 100 : 0);
+  bar.style.width = pct + "%";
+  bar.style.background = count<=target ? "var(--good)" : "var(--bad)";
+}
+
+function renderCalendarGoals(){
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth()+1, 0);
+
+  const weekBad = countBadDaysInRange(weekStart, weekEnd);
+  const monthBad = countBadDaysInRange(monthStart, monthEnd);
+
+  setGoalUI("week-goal-text", "week-goal-bar", weekBad, state.settings.weeklyBingeTarget);
+  setGoalUI("month-goal-text", "month-goal-bar", monthBad, state.settings.monthlyBingeTarget);
+}
+
+function renderCalendarStreakStats(){
+  const cs = computeCharacterState();
+  document.getElementById("cal-stat-streak").textContent = cs.streak;
+  document.getElementById("cal-stat-longest").textContent = cs.longestStreak;
+}
+
+function renderCalendar(){
+  const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+  document.getElementById("cal-month-label").textContent = `${y}年 ${m+1}月`;
+
+  renderCalendarStreakStats();
+  renderCalendarGoals();
+
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
+  ["日","月","火","水","木","金","土"].forEach(wd=>{
+    const el = document.createElement("div");
+    el.className = "wd";
+    el.textContent = wd;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(y, m, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayS = todayStr();
+
+  for(let i=0;i<startOffset;i++){
+    const el = document.createElement("div");
+    el.className = "cal-cell empty";
+    grid.appendChild(el);
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const dateStr = fmtDate(dateObj);
+    const status = dayStatus(dateStr);
+    const cell = document.createElement("div");
+    cell.className = "cal-cell" + (dateStr===todayS ? " today" : "");
+
+    let html = `<div class="d">${d}</div>`;
+    if(status!=="none"){
+      const csAsOf = computeCharacterState(dateStr);
+      html += `<div class="mini-avatar ring-${status}">${renderCharacterSVG(csAsOf)}</div>`;
+    }
+    html += weightCellHtml(dateStr);
+
+    cell.innerHTML = html;
+    cell.addEventListener("click", ()=> openDayModal(dateStr));
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById("cal-prev").addEventListener("click", ()=>{
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth()-1, 1);
+  renderCalendar();
+});
+document.getElementById("cal-next").addEventListener("click", ()=>{
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth()+1, 1);
+  renderCalendar();
+});
+
+// ---------- settings view ----------
+function renderSettings(){
+  document.getElementById("set-binge-threshold").value = state.settings.bingeThreshold;
+  document.getElementById("set-weekly-target").value = state.settings.weeklyBingeTarget;
+  document.getElementById("set-monthly-target").value = state.settings.monthlyBingeTarget;
+  document.getElementById("set-age").value = state.profile.age ?? "";
+  document.getElementById("set-height").value = state.profile.heightCm ?? "";
+  document.getElementById("set-goal-weight").value = state.profile.goalWeight ?? "";
+
+  const ref = referenceWeightRange(state.profile.heightCm, state.profile.age);
+  document.getElementById("settings-reference-note").textContent = ref
+    ? `目安体重: ${ref.low.toFixed(1)}kg 〜 ${ref.high.toFixed(1)}kg (医学的な診断ではなく参考値です)`
+    : "年齢(18歳以上)と身長を入力すると、目安体重が表示されます。";
+}
+document.getElementById("set-age").addEventListener("change", (e)=>{
+  const v = parseInt(e.target.value, 10);
+  state.profile.age = isNaN(v) ? null : v;
+  saveState();
+  renderAll();
+});
+document.getElementById("set-height").addEventListener("change", (e)=>{
+  const v = parseFloat(e.target.value);
+  state.profile.heightCm = isNaN(v) ? null : v;
+  saveState();
+  renderAll();
+});
+document.getElementById("set-goal-weight").addEventListener("change", (e)=>{
+  const v = parseFloat(e.target.value);
+  state.profile.goalWeight = isNaN(v) ? null : v;
+  saveState();
+  renderAll();
+});
+document.getElementById("set-binge-threshold").addEventListener("change", (e)=>{
+  const v = parseInt(e.target.value, 10);
+  if(isNaN(v) || v<1) return;
+  state.settings.bingeThreshold = v;
+  saveState();
+  renderAll();
+});
+document.getElementById("set-weekly-target").addEventListener("change", (e)=>{
+  const v = parseInt(e.target.value, 10);
+  if(isNaN(v) || v<0) return;
+  state.settings.weeklyBingeTarget = v;
+  saveState();
+  renderAll();
+});
+document.getElementById("set-monthly-target").addEventListener("change", (e)=>{
+  const v = parseInt(e.target.value, 10);
+  if(isNaN(v) || v<0) return;
+  state.settings.monthlyBingeTarget = v;
+  saveState();
+  renderAll();
+});
+document.getElementById("btn-reset-data").addEventListener("click", ()=>{
+  if(confirm("すべての記録・設定を初期状態に戻します。よろしいですか？")){
+    state = defaultState();
+    saveState();
+    renderAll();
+  }
+});
+
+// ---------- day modal ----------
+let modalDateStr = null;
+
+const STATUS_BANNER_TEXT = {
+  none: "まだこの日の記録がありません",
+  good: "GOOD — この日は達成です",
+  warn: "WARN — 食べ過ぎが1回あります",
+  bad:  "BAD — ドカ食いの日です",
+};
+
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderModalWeightNote(){
+  const note = document.getElementById("modal-weight-note");
+  const w = state.weights[modalDateStr];
+  const goal = state.profile.goalWeight;
+  if(w==null || goal==null || isNaN(goal)){
+    note.textContent = "";
+    return;
+  }
+  const diff = w - goal;
+  note.textContent = Math.abs(diff)<0.05
+    ? "目標体重ちょうどです"
+    : `目標まで ${Math.abs(diff).toFixed(1)}kg (${diff>0 ? "減量" : "増量"})`;
+}
+
+function openDayModal(dateStr){
+  modalDateStr = dateStr;
+  const d = parseDateStr(dateStr);
+  document.getElementById("modal-date-label").textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 の記録`;
+  document.getElementById("new-meal-time").value = nowTimeStr();
+  document.getElementById("modal-weight-input").value = state.weights[dateStr] ?? "";
+  renderModalWeightNote();
+
+  renderMealEntries();
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+document.getElementById("modal-weight-input").addEventListener("change", (e)=>{
+  const v = parseFloat(e.target.value);
+  if(isNaN(v) || v<=0){
+    delete state.weights[modalDateStr];
+  }else{
+    state.weights[modalDateStr] = v;
+  }
+  saveState();
+  renderModalWeightNote();
+  renderWeightCard();
+  renderCalendar();
+});
+
+function closeDayModal(){
+  document.getElementById("modal-overlay").classList.remove("open");
+  modalDateStr = null;
+}
+document.getElementById("modal-close").addEventListener("click", closeDayModal);
+document.getElementById("modal-overlay").addEventListener("click", (e)=>{
+  if(e.target.id==="modal-overlay") closeDayModal();
+});
+
+function renderMealEntries(){
+  const entries = dayEntries(modalDateStr).slice().sort((a,b)=> a.time.localeCompare(b.time));
+
+  const listBox = document.getElementById("meal-entries-list");
+  listBox.innerHTML = "";
+  if(entries.length===0){
+    listBox.innerHTML = `<div class="empty-msg">まだ記録がありません。下から食事を追加してください</div>`;
+  }else{
+    entries.forEach(e=>{
+      const lv = LEVELS[e.level];
+      const row = document.createElement("div");
+      row.className = "meal-entry";
+      row.innerHTML = `
+        <span class="time">${e.time}</span>
+        <span class="level-chip ${lv.chipClass}">${lv.emoji} ${lv.label}</span>
+        <button class="del" data-id="${e.id}">🗑</button>
+      `;
+      row.querySelector(".del").addEventListener("click", ()=>{
+        state.logs[modalDateStr] = dayEntries(modalDateStr).filter(x=>x.id!==e.id);
+        saveState();
+        renderMealEntries();
+        renderCalendar();
+        renderCharacterView();
+      });
+      listBox.appendChild(row);
+    });
+  }
+
+  const banner = document.getElementById("day-status-banner");
+  const status = dayStatus(modalDateStr);
+  banner.textContent = STATUS_BANNER_TEXT[status];
+  banner.className = "day-status-banner banner-" + status;
+}
+
+document.querySelectorAll(".level-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const level = btn.dataset.level;
+    const time = document.getElementById("new-meal-time").value || nowTimeStr();
+    if(!state.logs[modalDateStr]) state.logs[modalDateStr] = [];
+    state.logs[modalDateStr].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
+    saveState();
+    renderMealEntries();
+    renderCalendar();
+    renderCharacterView();
+  });
+});
+
+document.getElementById("btn-log-today").addEventListener("click", ()=>{
+  switchView("cal");
+  openDayModal(todayStr());
+});
+document.getElementById("btn-log-weight-today").addEventListener("click", ()=>{
+  switchView("cal");
+  openDayModal(todayStr());
+});
+
+// ---------- nav ----------
+function switchView(name){
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view===name);
+  });
+  document.querySelectorAll(".view").forEach(v=>{
+    v.classList.toggle("active", v.id==="view-"+name);
+  });
+  if(name==="cal") renderCalendar();
+}
+document.querySelectorAll("nav button").forEach(b=>{
+  b.addEventListener("click", ()=> switchView(b.dataset.view));
+});
+
+// ---------- full render ----------
+function renderAll(){
+  renderCharacterView();
+  renderWeightCard();
+  renderCalendar();
+  renderSettings();
+}
+
+renderAll();
+
+})();
+</script>
+</body>
+</html>
