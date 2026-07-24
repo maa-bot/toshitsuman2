@@ -104,6 +104,41 @@
     width:220px;
     height:220px;
   }
+  @media (prefers-reduced-motion: no-preference){
+    .hero-idle-bob{ animation: hero-bob 3.2s ease-in-out infinite; }
+    .hero-breathe{ animation: hero-breathe 2.6s ease-in-out infinite; }
+    .hero-blink{ animation: hero-blink 4.5s ease-in-out infinite; }
+    .hero-cape-sway{ animation: hero-cape 3.6s ease-in-out infinite; }
+    .hero-sword-glint{ animation: hero-glint 2.8s ease-in-out infinite; }
+    .hero-aura{ animation: hero-aura-pulse 2.4s ease-in-out infinite; }
+  }
+  .hero-sword-glint{ opacity:0; }
+  @keyframes hero-bob{
+    0%,100%{ transform: translateY(0); }
+    50%{ transform: translateY(-4px); }
+  }
+  @keyframes hero-breathe{
+    0%,100%{ transform: scaleY(1); }
+    50%{ transform: scaleY(1.03); }
+  }
+  @keyframes hero-blink{
+    0%,90%,100%{ transform: scaleY(1); }
+    93%{ transform: scaleY(0.12); }
+    96%{ transform: scaleY(1); }
+  }
+  @keyframes hero-cape{
+    0%,100%{ transform: rotate(-3deg); }
+    50%{ transform: rotate(3deg); }
+  }
+  @keyframes hero-glint{
+    0%,80%,100%{ opacity:0; }
+    85%{ opacity:0.9; }
+    90%{ opacity:0; }
+  }
+  @keyframes hero-aura-pulse{
+    0%,100%{ opacity:0.3; transform:scale(1); }
+    50%{ opacity:0.55; transform:scale(1.04); }
+  }
   .speech-bubble{
     position:relative;
     background:var(--panel2);
@@ -1407,74 +1442,100 @@ function allLoggedDatesSorted(){
 
 // ---------- SVG hero rendering ----------
 const HP_COLORS = {
-  happy:    {skin:"#f4c9a0", cloth:"#4f8ff7", cloth2:"#3a6fd0", accent:"#ffe066"},
-  tired:    {skin:"#d8b596", cloth:"#8a91a8", cloth2:"#6d7490", accent:"#d8c98a"},
-  corrupted:{skin:"#b9a898", cloth:"#8a6b8f", cloth2:"#6a4f70", accent:"#5fd6c2"},
+  happy:    {skinLight:"#ffe3c7", skin:"#f4c9a0", cloth:"#6ea8ff", cloth2:"#2c4aa8", hair:"#4a2f1a"},
+  tired:    {skinLight:"#ecd2b4", skin:"#d8b596", cloth:"#a3aabf", cloth2:"#5a6377", hair:"#4a2f1a"},
+  corrupted:{skinLight:"#d5c2ae", skin:"#b9a898", cloth:"#a687ab", cloth2:"#5f4566", hair:"#3a2a1a"},
 };
+const HERO_ACCENT = "#ffd76a";
+let svgIdCounter = 0;
 
-function eyesFor(mood){
-  if(mood==="happy") return `
-    <path d="M 82 100 Q 88 90 94 100" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <path d="M 126 100 Q 132 90 138 100" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-  if(mood==="tired") return `
-    <line x1="80" y1="98" x2="96" y2="98" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
-    <line x1="124" y1="98" x2="140" y2="98" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>`;
+function eyesFor(hpTier){
+  if(hpTier==="happy") return `
+    <path d="M 84 96 Q 90 88 96 96" stroke="#2a1a12" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M 124 96 Q 130 88 136 96" stroke="#2a1a12" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(hpTier==="tired") return `
+    <line x1="82" y1="94" x2="98" y2="94" stroke="#2a1a12" stroke-width="4" stroke-linecap="round"/>
+    <line x1="122" y1="94" x2="138" y2="94" stroke="#2a1a12" stroke-width="4" stroke-linecap="round"/>`;
   return `
-    <path d="M 80 92 L 96 104 M 96 92 L 80 104" stroke="#2a0a2a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M 124 92 L 140 104 M 140 92 L 124 104" stroke="#2a0a2a" stroke-width="4" stroke-linecap="round"/>`;
+    <path d="M 82 88 L 98 100 M 98 88 L 82 100" stroke="#3a1010" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 122 88 L 138 100 M 138 88 L 122 100" stroke="#3a1010" stroke-width="4" stroke-linecap="round"/>`;
 }
 
-function mouthFor(mood){
-  if(mood==="happy") return `<path d="M 96 122 Q 110 134 124 122" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-  if(mood==="tired") return `<line x1="98" y1="126" x2="122" y2="126" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>`;
-  return `<path d="M 96 130 Q 110 118 124 130" stroke="#2a0a2a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+function mouthFor(hpTier){
+  if(hpTier==="happy") return `<path d="M 96 112 Q 110 122 124 112" stroke="#2a1a12" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(hpTier==="tired") return `<line x1="98" y1="114" x2="122" y2="114" stroke="#2a1a12" stroke-width="4" stroke-linecap="round"/>`;
+  return `<path d="M 96 118 Q 110 108 124 118" stroke="#3a1010" stroke-width="4" fill="none" stroke-linecap="round"/>`;
 }
 
-function extrasFor(level, hpTier, colors){
+function equipmentFor(level, hpTier){
   let s = "";
-  if(level>=5){ // sword from adventurer on
-    s += `<rect x="160" y="128" width="7" height="55" rx="2" fill="#d8dee8" stroke="#8f97a8" stroke-width="1"/>
-          <rect x="153" y="176" width="21" height="9" rx="3" fill="#8b5a2b"/>`;
+  if(level>=5){ // sword, adventurer+
+    s += `<rect x="158" y="130" width="8" height="52" rx="3" fill="#e6ecf5" stroke="#9aa4b8" stroke-width="1"/>
+          <rect x="151" y="176" width="22" height="10" rx="3" fill="#8b5a2b"/>
+          <rect x="160" y="134" width="2.5" height="44" fill="#ffffff" class="hero-sword-glint"/>`;
   }
-  if(level>=10){ // shield + chest highlight from warrior on
-    s += `<ellipse cx="55" cy="165" rx="14" ry="18" fill="#c9a94f" stroke="#8a6d1f" stroke-width="2"/>
-          <rect x="82" y="132" width="56" height="18" rx="8" fill="#e8edf6" opacity="0.55"/>`;
+  if(level>=10){ // shield, warrior+
+    s += `<ellipse cx="52" cy="168" rx="15" ry="19" fill="#d4b45a" stroke="#8a6d1f" stroke-width="2"/>
+          <ellipse cx="52" cy="168" rx="8" ry="11" fill="none" stroke="#8a6d1f" stroke-width="1.5" opacity="0.6"/>`;
   }
-  if(level>=20){ // helmet from knight on
-    s += `<path d="M 66 88 A 44 44 0 0 1 154 88 L 154 72 L 66 72 Z" fill="#b0b8c9" stroke="#7c8698" stroke-width="2"/>`;
+  if(level>=20){ // helmet, knight+
+    s += `<path d="M 64 78 A 46 46 0 0 1 156 78 L 150 58 Q 110 46 70 58 Z" fill="#c3cbdb" stroke="#8b93a6" stroke-width="2"/>`;
   }
-  if(level>=40){ // aura + crown at hero tier
-    s += `<circle cx="110" cy="115" r="98" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.4"/>
-          <path d="M 90 30 L 100 45 L 110 25 L 120 45 L 130 30 L 125 55 L 95 55 Z" fill="#ffd76a"/>`;
+  if(level>=40){ // crown, hero
+    s += `<path d="M 92 40 L 100 54 L 110 34 L 120 54 L 128 40 L 124 62 L 96 62 Z" fill="${HERO_ACCENT}" stroke="#c9a530" stroke-width="1"/>`;
   }
   if(hpTier==="corrupted"){
-    s += `<ellipse cx="150" cy="55" rx="12" ry="8" fill="#7dd3fc" opacity="0.8"/>`;
+    s += `<ellipse cx="150" cy="60" rx="10" ry="7" fill="#7dd3fc" opacity="0.85"/>`;
   }
   return s;
 }
 
 function capeFor(level, colors){
   if(level<20) return "";
-  return `<path d="M 85 134 Q 58 175 72 208 L 148 208 Q 162 175 135 134 Z" fill="${colors.cloth2}" opacity="0.85"/>`;
+  return `<g class="hero-cape-sway" style="transform-origin:110px 132px;">
+    <path d="M 82 132 Q 55 175 70 206 L 150 206 Q 165 175 138 132 Z" fill="${colors.cloth2}" opacity="0.85"/>
+  </g>`;
 }
 
 function renderHeroSVG(rpg){
   const colors = HP_COLORS[rpg.hpTier];
   const level = rpg.level;
-  const bodyOffsetY = rpg.hpTier==="corrupted" ? 6 : 0;
+  const uid = svgIdCounter++;
+  const skinGrad = `skinGrad${uid}`;
+  const clothGrad = `clothGrad${uid}`;
 
   return `<svg viewBox="0 0 220 220" width="100%" height="100%">
-    <g transform="translate(0 ${bodyOffsetY})">
+    <defs>
+      <radialGradient id="${skinGrad}" cx="35%" cy="28%" r="80%">
+        <stop offset="0%" stop-color="${colors.skinLight}"/>
+        <stop offset="100%" stop-color="${colors.skin}"/>
+      </radialGradient>
+      <linearGradient id="${clothGrad}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${colors.cloth}"/>
+        <stop offset="100%" stop-color="${colors.cloth2}"/>
+      </linearGradient>
+    </defs>
+    <g class="hero-idle-bob">
+      ${level>=40 ? `<circle class="hero-aura" cx="110" cy="120" r="96" fill="none" stroke="${HERO_ACCENT}" stroke-width="4" opacity="0.35" style="transform-origin:110px 120px;"/>` : ""}
       ${capeFor(level, colors)}
-      <path d="M 80 145 L 55 185" stroke="${colors.cloth2}" stroke-width="16" stroke-linecap="round"/>
-      <path d="M 140 145 L 165 185" stroke="${colors.cloth2}" stroke-width="16" stroke-linecap="round"/>
-      <rect x="86" y="180" width="18" height="26" rx="6" fill="${colors.cloth2}"/>
-      <rect x="116" y="180" width="18" height="26" rx="6" fill="${colors.cloth2}"/>
-      <rect x="78" y="128" width="64" height="58" rx="18" fill="${colors.cloth}" stroke="${colors.cloth2}" stroke-width="3"/>
-      <circle cx="110" cy="88" r="46" fill="${colors.skin}" stroke="#c99a6f" stroke-width="3"/>
-      ${extrasFor(level, rpg.hpTier, colors)}
-      ${eyesFor(rpg.hpTier)}
-      ${mouthFor(rpg.hpTier)}
+      <g class="hero-breathe" style="transform-origin:110px 160px;">
+        <rect x="88" y="185" width="17" height="24" rx="7" fill="${colors.cloth2}"/>
+        <rect x="115" y="185" width="17" height="24" rx="7" fill="${colors.cloth2}"/>
+        <path d="M 82 148 Q 60 165 58 188" stroke="${colors.cloth2}" stroke-width="15" fill="none" stroke-linecap="round"/>
+        <path d="M 138 148 Q 160 165 162 188" stroke="${colors.cloth2}" stroke-width="15" fill="none" stroke-linecap="round"/>
+        <path d="M 78 150 Q 78 128 110 126 Q 142 128 142 150 L 140 188 Q 110 196 80 188 Z" fill="url(#${clothGrad})"/>
+        <ellipse cx="95" cy="145" rx="14" ry="20" fill="#ffffff" opacity="0.12"/>
+        <path d="M 90 152 L 130 152 L 126 190 Q 110 195 94 190 Z" fill="${colors.cloth2}" opacity="0.45"/>
+        <circle cx="110" cy="90" r="44" fill="url(#${skinGrad})"/>
+        <path d="M 66 85 Q 66 42 110 40 Q 154 42 154 85 Q 148 58 110 55 Q 72 58 66 85 Z" fill="${colors.hair}"/>
+        <ellipse cx="86" cy="100" rx="7" ry="5" fill="#ff9a9a" opacity="0.35"/>
+        <ellipse cx="134" cy="100" rx="7" ry="5" fill="#ff9a9a" opacity="0.35"/>
+        <g class="hero-blink" style="transform-origin:110px 92px;">
+          ${eyesFor(rpg.hpTier)}
+        </g>
+        ${mouthFor(rpg.hpTier)}
+      </g>
+      ${equipmentFor(level, rpg.hpTier)}
     </g>
   </svg>`;
 }
