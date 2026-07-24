@@ -168,6 +168,16 @@
   .stat-box .num{font-size:18px;font-weight:700;}
   .stat-box .label{font-size:11px;color:var(--muted);margin-top:2px;}
 
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-top:14px;
+    width:100%;
+  }
+  .stat-grid .stat-box .num{font-size:16px;}
+  .stat-grid .stat-box .label{font-size:10px;}
+
   .expbar-outer{
     width:100%;
     height:10px;
@@ -182,6 +192,21 @@
     transition:width .4s;
   }
   .expbar-label{font-size:11px;color:var(--muted); margin-top:4px;}
+
+  .hpmp-block{width:100%;}
+  .hpmp-row{margin-top:10px;}
+  .hpmp-row .expbar-outer{margin-top:0;}
+  .hp-bar-inner{background:linear-gradient(90deg,#ff5f6d,#ff9a9a);}
+  .mp-bar-inner{background:linear-gradient(90deg,#4f8ff7,#8fc1ff);}
+
+  .char-svg-box.hp-danger{
+    border-radius:50%;
+    animation:hp-danger-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes hp-danger-pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,95,109,.5);}
+    50%{box-shadow:0 0 0 8px rgba(255,95,109,0);}
+  }
 
   .badges{
     display:flex;
@@ -512,6 +537,16 @@
     text-align:right;
   }
   .duration-row span{font-size:13px; color:var(--muted);}
+  .checkbox-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--text);
+    margin-bottom:14px;
+    cursor:pointer;
+  }
+  .checkbox-row input{width:18px; height:18px;}
   .level-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -562,6 +597,7 @@
   <button data-view="char" class="active">キャラクター</button>
   <button data-view="record">記録</button>
   <button data-view="exercise">運動</button>
+  <button data-view="lifelog">ライフログ</button>
   <button data-view="cal">カレンダー</button>
   <button data-view="settings">設定</button>
 </nav>
@@ -582,6 +618,29 @@
 
       <div class="expbar-outer"><div class="expbar-inner" id="exp-bar"></div></div>
       <div class="expbar-label" id="exp-label"></div>
+
+      <div class="hpmp-block">
+        <div class="hpmp-row">
+          <div class="expbar-outer hp-bar-outer"><div class="expbar-inner hp-bar-inner" id="hp-bar"></div></div>
+          <div class="expbar-label" id="hp-label"></div>
+        </div>
+        <div class="hpmp-row">
+          <div class="expbar-outer mp-bar-outer"><div class="expbar-inner mp-bar-inner" id="mp-bar"></div></div>
+          <div class="expbar-label" id="mp-label"></div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num" id="stat-str">0</div><div class="label">STR 力</div></div>
+        <div class="stat-box"><div class="num" id="stat-atk">0</div><div class="label">ATK 攻撃力</div></div>
+        <div class="stat-box"><div class="num" id="stat-vit">0</div><div class="label">VIT 生命力</div></div>
+        <div class="stat-box"><div class="num" id="stat-def">0</div><div class="label">DEF 防御力</div></div>
+        <div class="stat-box"><div class="num" id="stat-int">0</div><div class="label">INT 知力</div></div>
+        <div class="stat-box"><div class="num" id="stat-res">0</div><div class="label">RES 抵抗力</div></div>
+        <div class="stat-box"><div class="num" id="stat-dex">0</div><div class="label">DEX 器用さ</div></div>
+        <div class="stat-box"><div class="num" id="stat-agi">0</div><div class="label">AGI 素早さ</div></div>
+        <div class="stat-box"><div class="num" id="stat-luk">0</div><div class="label">LUK 運</div></div>
+      </div>
 
       <div class="stat-row">
         <div class="stat-box"><div class="num" id="stat-streak">0</div><div class="label">連続達成日数</div></div>
@@ -606,9 +665,9 @@
     <div class="card">
       <h2>育成のしくみ</h2>
       <p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0;">
-        1食ごとに「食べ過ぎ・普通・軽め・絶食」を記録するだけ。<br>
-        その日「食べ過ぎ」が無かった日は <b style="color:var(--good)">GOOD</b> でEXPが貯まり進化に近づく。<br>
-        「食べ過ぎ」が1回あった日は <b style="color:var(--warn)">WARN</b>。設定回数以上「食べ過ぎ」た「ドカ食い」の日は <b style="color:var(--bad)">BAD</b> でEXPが減り、連続記録もリセット。ドカ食いが続くと見た目も荒れていく。
+        食事・運動・睡眠・休憩瞑想・読書学習・メンタル・新しい挑戦——記録した行為そのものがEXPになり、Lvが上がる。<br>
+        HPは食事の質と睡眠で増減し、MPは休憩・瞑想と睡眠の質で回復する。<b style="color:var(--bad)">HPが尽きかけると</b>見た目も弱ってくるので要注意。<br>
+        STR/ATK/VIT/DEF/INT/RES/DEX/AGI/LUKは、対応する生活習慣を記録するたびにコツコツ育っていく。Lvが上がると装備も変化していく。
       </p>
     </div>
   </section>
@@ -689,6 +748,7 @@
           <button class="sel-btn slot-btn" data-type="running">ランニング</button>
           <button class="sel-btn slot-btn" data-type="yoga">ヨガ</button>
           <button class="sel-btn slot-btn" data-type="stretch">ストレッチ</button>
+          <button class="sel-btn slot-btn" data-type="race">レース・本番</button>
           <button class="sel-btn slot-btn" data-type="other">その他</button>
         </div>
 
@@ -705,7 +765,71 @@
           <button class="sel-btn level-btn lv-light" data-intensity="low"><span class="emoji">🟢</span>低</button>
         </div>
 
+        <label class="checkbox-row"><input type="checkbox" id="exercise-form-practice"> フォーム練習に取り組んだ</label>
+
         <button class="quick-log-btn" id="exercise-save">保存する</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIFELOG VIEW -->
+  <section class="view" id="view-lifelog">
+    <div class="card">
+      <h2>ライフログ (<span id="lifelog-date-label"></span>)</h2>
+    </div>
+
+    <div class="card">
+      <h2>今日の睡眠</h2>
+      <div class="duration-row">
+        <input type="number" min="0" step="0.5" id="sleep-hours" placeholder="0"><span>時間</span>
+      </div>
+      <p class="sub-label">睡眠の質</p>
+      <div class="slot-grid" id="sleep-quality-grid">
+        <button class="sel-btn slot-btn" data-quality="good">良い</button>
+        <button class="sel-btn slot-btn" data-quality="normal">普通</button>
+        <button class="sel-btn slot-btn" data-quality="poor">悪い</button>
+      </div>
+      <button class="quick-log-btn" id="sleep-save">保存する</button>
+    </div>
+
+    <div class="card">
+      <h2>休憩・瞑想</h2>
+      <div id="rest-entries-list"></div>
+      <div class="add-meal-box">
+        <div class="duration-row">
+          <input type="number" min="0" id="rest-minutes" placeholder="0"><span>分</span>
+        </div>
+        <button class="quick-log-btn" id="rest-save">追加する</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>読書・学習</h2>
+      <div id="reading-entries-list"></div>
+      <div class="add-meal-box">
+        <div class="duration-row">
+          <input type="number" min="0" id="reading-minutes" placeholder="0"><span>分</span>
+        </div>
+        <button class="quick-log-btn" id="reading-save">追加する</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>今日のメンタル</h2>
+      <div class="slot-grid" id="stress-grid">
+        <button class="sel-btn slot-btn" data-rating="good">良好</button>
+        <button class="sel-btn slot-btn" data-rating="normal">普通</button>
+        <button class="sel-btn slot-btn" data-rating="hard">しんどい</button>
+      </div>
+      <button class="quick-log-btn" id="stress-save">保存する</button>
+    </div>
+
+    <div class="card">
+      <h2>今日の挑戦</h2>
+      <div id="challenge-entries-list"></div>
+      <div class="add-meal-box">
+        <input type="text" id="challenge-note" placeholder="新しいこと・出会い(任意)" style="width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; margin-bottom:12px;">
+        <button class="quick-log-btn" id="challenge-save">追加する</button>
       </div>
     </div>
   </section>
@@ -881,7 +1005,20 @@ const EXERCISE_TYPES = {
   running:  {label:"ランニング"},
   yoga:     {label:"ヨガ"},
   stretch:  {label:"ストレッチ"},
+  race:     {label:"レース・本番"},
   other:    {label:"その他"},
+};
+
+const SLEEP_QUALITY = {
+  good:   {label:"良い"},
+  normal: {label:"普通"},
+  poor:   {label:"悪い"},
+};
+
+const STRESS_RATING = {
+  good:   {label:"良好"},
+  normal: {label:"普通"},
+  hard:   {label:"しんどい"},
 };
 
 const INTENSITY = {
@@ -899,6 +1036,11 @@ function defaultState(){
     weights: {},
     exercises: {},
     steps: {},
+    sleep: {},
+    rests: {},
+    reading: {},
+    stress: {},
+    challenges: {},
     settings: Object.assign({}, DEFAULT_SETTINGS),
     profile: Object.assign({}, DEFAULT_PROFILE),
   };
@@ -914,6 +1056,11 @@ function loadState(){
       weights: parsed.weights || {},
       exercises: parsed.exercises || {},
       steps: parsed.steps || {},
+      sleep: parsed.sleep || {},
+      rests: parsed.rests || {},
+      reading: parsed.reading || {},
+      stress: parsed.stress || {},
+      challenges: parsed.challenges || {},
       settings: Object.assign({}, DEFAULT_SETTINGS, parsed.settings||{}),
       profile: Object.assign({}, DEFAULT_PROFILE, parsed.profile||{}),
     });
@@ -1017,15 +1164,174 @@ function computeWeightProgress(){
 }
 
 // ---------- character derivation ----------
-const STAGES = [
-  {key:"egg", name:"たまご", threshold:0},
-  {key:"baby", name:"ベビー", threshold:20},
-  {key:"rookie", name:"ロキ", threshold:60},
-  {key:"champion", name:"チャンピオン", threshold:150},
-  {key:"perfect", name:"パーフェクト", threshold:300},
-  {key:"mega", name:"メガ", threshold:600},
+const LEVEL_TIERS = [
+  {min:1,  max:4,  key:"novice",     name:"見習い"},
+  {min:5,  max:9,  key:"adventurer", name:"冒険者"},
+  {min:10, max:19, key:"warrior",    name:"戦士"},
+  {min:20, max:39, key:"knight",     name:"騎士"},
+  {min:40, max:Infinity, key:"hero", name:"勇者"},
 ];
 const BADGE_MILESTONES = [3,7,14,30,60,100];
+
+function levelTierFor(level){
+  return LEVEL_TIERS.find(t=> level>=t.min && level<=t.max) || LEVEL_TIERS[0];
+}
+
+function expForLevel(level){
+  return 25*level*(level-1);
+}
+function levelForExp(exp){
+  let level = 1;
+  while(expForLevel(level+1)<=exp) level++;
+  return level;
+}
+
+function allActivityDatesSorted(cutoff){
+  const set = new Set();
+  const addDatedObj = (obj)=> Object.keys(obj).forEach(d=>{ if(d<=cutoff) set.add(d); });
+  const addDatedList = (obj)=> Object.keys(obj).forEach(d=>{ if(d<=cutoff && obj[d] && obj[d].length>0) set.add(d); });
+  addDatedList(state.logs);
+  addDatedObj(state.weights);
+  addDatedList(state.exercises);
+  addDatedObj(state.steps);
+  addDatedObj(state.sleep);
+  addDatedList(state.rests);
+  addDatedList(state.reading);
+  addDatedObj(state.stress);
+  addDatedList(state.challenges);
+  return Array.from(set).sort();
+}
+
+function countLoggedActions(cutoff){
+  let n = 0;
+  Object.keys(state.logs).forEach(d=>{ if(d<=cutoff) n += state.logs[d].length; });
+  Object.keys(state.weights).forEach(d=>{ if(d<=cutoff) n += 1; });
+  Object.keys(state.exercises).forEach(d=>{ if(d<=cutoff) n += state.exercises[d].length; });
+  Object.keys(state.steps).forEach(d=>{ if(d<=cutoff) n += 1; });
+  Object.keys(state.sleep).forEach(d=>{ if(d<=cutoff) n += 1; });
+  Object.keys(state.rests).forEach(d=>{ if(d<=cutoff) n += state.rests[d].length; });
+  Object.keys(state.reading).forEach(d=>{ if(d<=cutoff) n += state.reading[d].length; });
+  Object.keys(state.stress).forEach(d=>{ if(d<=cutoff) n += 1; });
+  Object.keys(state.challenges).forEach(d=>{ if(d<=cutoff) n += state.challenges[d].length; });
+  return n;
+}
+
+function computePermanentStats(cutoff){
+  let str=0, atk=0, def=0, agi=0, dex=0, vit=0, intStat=0, res=0, luk=0;
+
+  Object.keys(state.exercises).forEach(d=>{
+    if(d>cutoff) return;
+    state.exercises[d].forEach(e=>{
+      if(e.type==="strength") str += 3;
+      if(e.type==="stretch" || e.type==="yoga") def += 3;
+      if(e.type==="walking" || e.type==="jogging" || e.type==="running") atk += 2;
+      if(e.type==="race") atk += 6;
+      if(e.type==="jogging" || e.type==="running") agi += 2;
+      if(e.formPractice) dex += 3;
+    });
+  });
+  Object.keys(state.steps).forEach(d=>{
+    if(d>cutoff) return;
+    if(state.steps[d]>=8000) agi += 1;
+  });
+  Object.keys(state.sleep).forEach(d=>{
+    if(d>cutoff) return;
+    const q = state.sleep[d].quality;
+    if(q==="good") vit += 2;
+    else if(q==="normal") vit += 1;
+  });
+  Object.keys(state.reading).forEach(d=>{
+    if(d>cutoff) return;
+    intStat += state.reading[d].length * 3;
+  });
+  Object.keys(state.stress).forEach(d=>{
+    if(d>cutoff) return;
+    res += state.stress[d].rating==="good" ? 3 : 1;
+  });
+  Object.keys(state.challenges).forEach(d=>{
+    if(d>cutoff) return;
+    luk += state.challenges[d].length * 4;
+  });
+
+  return {str, atk, def, agi, dex, vit, int:intStat, res, luk};
+}
+
+function simulateHpMp(cutoff, maxHp, maxMp){
+  const dates = allActivityDatesSorted(cutoff);
+  if(dates.length===0) return {hp:maxHp, mp:maxMp};
+  let hp = maxHp, mp = maxMp;
+  const d = parseDateStr(dates[0]);
+  const end = parseDateStr(cutoff);
+  while(d<=end){
+    const ds = fmtDate(d);
+
+    const st = dayStatus(ds);
+    if(st==="good") hp += 10;
+    else if(st==="warn") hp -= 5;
+    else if(st==="bad") hp -= 15;
+    else hp -= 2;
+    const sleepEntry = state.sleep[ds];
+    if(sleepEntry){
+      if(sleepEntry.quality==="good") hp += 5;
+      else if(sleepEntry.quality==="poor") hp -= 5;
+    }
+    hp = Math.max(0, Math.min(maxHp, hp));
+
+    const restCount = (state.rests[ds]||[]).length;
+    mp += restCount*8;
+    mp += (state.reading[ds]||[]).length*2;
+    if(restCount===0) mp -= 3;
+    const stressEntry = state.stress[ds];
+    if(stressEntry && stressEntry.rating==="hard") mp -= 5;
+    mp = Math.max(0, Math.min(maxMp, mp));
+
+    d.setDate(d.getDate()+1);
+  }
+  return {hp, mp};
+}
+
+function computeStreakAndBadges(cutoff){
+  const dates = allLoggedDatesSorted().filter(d=>d<=cutoff);
+  let streak=0, longestStreak=0;
+  const badgesEarned = new Set();
+  dates.forEach(d=>{
+    const st = dayStatus(d);
+    if(st==="good") streak += 1;
+    else if(st==="bad") streak = 0;
+    longestStreak = Math.max(longestStreak, streak);
+    BADGE_MILESTONES.forEach(m=>{ if(streak>=m) badgesEarned.add(m); });
+  });
+  return {streak, longestStreak, badgesEarned};
+}
+
+function computeRPGState(cutoffDateStr){
+  const cutoff = cutoffDateStr || todayStr();
+
+  const exp = countLoggedActions(cutoff) * 5;
+  const level = levelForExp(exp);
+  const expFloor = expForLevel(level);
+  const expNext = expForLevel(level+1);
+
+  const stats = computePermanentStats(cutoff);
+  const maxHp = 50 + stats.vit*3;
+  const maxMp = 30 + stats.res*2;
+  const {hp, mp} = simulateHpMp(cutoff, maxHp, maxMp);
+
+  const {streak, longestStreak, badgesEarned} = computeStreakAndBadges(cutoff);
+
+  const hpRatio = maxHp>0 ? hp/maxHp : 1;
+  let hpTier = "happy";
+  if(hpRatio<0.3) hpTier = "corrupted";
+  else if(hpRatio<0.7) hpTier = "tired";
+
+  return {
+    level, exp, expFloor, expNext, tier: levelTierFor(level),
+    hp, maxHp, mp, maxMp, hpRatio, hpTier,
+    str:stats.str, atk:stats.atk, vit:stats.vit, def:stats.def,
+    int:stats.int, res:stats.res, dex:stats.dex, agi:stats.agi, luk:stats.luk,
+    streak, longestStreak, badgesEarned,
+  };
+}
 
 const SPEECH = {
   milestone: (streak)=> [
@@ -1033,15 +1339,15 @@ const SPEECH = {
     `${streak}日連続、自分をほめてあげて！`,
     `ここまで続いたのは、コツコツ頑張ったからだよ！`,
   ],
-  corrupted: [
-    "最近ちょっと調子悪そう…一緒に立て直そう",
-    "うぅ…ドカ食いが続いてるみたい。少しずつで大丈夫だよ",
-    "無理しなくていいから、次の1食から戻していこう",
+  lowHp: [
+    "HPがピンチだよ…食事と睡眠を整えよう",
+    "うぅ…ちょっと消耗してるみたい。休むのも大事だよ",
+    "無理しなくていいから、次の1食・1睡眠から立て直そう",
   ],
   notLoggedNoHistory: [
-    "はじめまして！今日から一緒にがんばろうね",
+    "はじめまして！今日から一緒に冒険をはじめよう",
     "まずは今日の記録からはじめてみよう！",
-    "『記録』タブからごはんを教えてね",
+    "『記録』『運動』『ライフログ』から今日のことを教えてね",
   ],
   notLoggedToday: [
     "今日は記録した？",
@@ -1068,79 +1374,42 @@ const SPEECH = {
 };
 let lastSpeechText = "";
 
-function speechCategory(cs){
-  if(BADGE_MILESTONES.includes(cs.streak)) return "milestone";
-  if(cs.mood==="corrupted") return "corrupted";
-  if(allLoggedDatesSorted().length===0) return "notLoggedNoHistory";
+function speechCategory(rpg){
+  if(BADGE_MILESTONES.includes(rpg.streak)) return "milestone";
+  if(rpg.hpTier==="corrupted") return "lowHp";
+  if(allActivityDatesSorted(todayStr()).length===0) return "notLoggedNoHistory";
   const todayStatus = dayStatus(todayStr());
   if(todayStatus==="none") return "notLoggedToday";
   return todayStatus;
 }
 
-function pickSpeechLine(category, cs){
-  const lines = typeof SPEECH[category]==="function" ? SPEECH[category](cs.streak) : SPEECH[category];
+function pickSpeechLine(category, rpg){
+  const lines = typeof SPEECH[category]==="function" ? SPEECH[category](rpg.streak) : SPEECH[category];
   if(lines.length===1) return lines[0];
   let choice;
   do{ choice = lines[Math.floor(Math.random()*lines.length)]; }while(choice===lastSpeechText);
   return choice;
 }
 
-function renderSpeech(cs){
-  const text = pickSpeechLine(speechCategory(cs), cs);
+function renderSpeech(rpg){
+  const text = pickSpeechLine(speechCategory(rpg), rpg);
   lastSpeechText = text;
   document.getElementById("char-speech-text").textContent = text;
 }
 
 document.getElementById("char-speech-bubble").addEventListener("click", ()=>{
-  renderSpeech(computeCharacterState());
+  renderSpeech(computeRPGState());
 });
 
 function allLoggedDatesSorted(){
   return Object.keys(state.logs).filter(d=>state.logs[d] && state.logs[d].length>0).sort();
 }
 
-function computeCharacterState(cutoffDateStr){
-  const allDates = allLoggedDatesSorted();
-  const dates = cutoffDateStr ? allDates.filter(d=> d<=cutoffDateStr) : allDates;
-  let exp=0, streak=0, longestStreak=0;
-  const badgesEarned = new Set();
-  dates.forEach(d=>{
-    const st = dayStatus(d);
-    if(st==="good"){ exp+=12; streak+=1; }
-    else if(st==="warn"){ exp=Math.max(0,exp+3); }
-    else if(st==="bad"){ exp=Math.max(0,exp-20); streak=0; }
-    longestStreak = Math.max(longestStreak, streak);
-    BADGE_MILESTONES.forEach(m=>{ if(streak>=m) badgesEarned.add(m); });
-  });
-
-  let stageIdx=0;
-  for(let i=0;i<STAGES.length;i++){ if(exp>=STAGES[i].threshold) stageIdx=i; }
-  const stage = STAGES[stageIdx];
-  const nextStage = STAGES[stageIdx+1];
-
-  // mood based on the 7 calendar days ending at the reference date (today, unless a cutoff is given)
-  const refDate = cutoffDateStr ? parseDateStr(cutoffDateStr) : new Date();
-  let badCount=0, anyLogged=false;
-  for(let i=0;i<7;i++){
-    const d = new Date(refDate); d.setDate(d.getDate()-i);
-    const ds = fmtDate(d);
-    const st = dayStatus(ds);
-    if(st!=="none"){ anyLogged=true; if(st==="bad") badCount++; }
-  }
-  let mood = "happy";
-  if(anyLogged){
-    if(badCount>=3) mood="corrupted";
-    else if(badCount>=1) mood="tired";
-  }
-
-  return {exp, streak, longestStreak, badgesEarned, stage, stageIdx, nextStage, mood};
-}
-
-// ---------- SVG character rendering ----------
-const MOOD_COLORS = {
-  happy:    {body:"#6fe08a", body2:"#4fc76d", accent:"#ffe066"},
-  tired:    {body:"#b7b79a", body2:"#9b9b7f", accent:"#d8c98a"},
-  corrupted:{body:"#a15fc2", body2:"#7a3f9c", accent:"#5fd6c2"},
+// ---------- SVG hero rendering ----------
+const HP_COLORS = {
+  happy:    {skin:"#f4c9a0", cloth:"#4f8ff7", cloth2:"#3a6fd0", accent:"#ffe066"},
+  tired:    {skin:"#d8b596", cloth:"#8a91a8", cloth2:"#6d7490", accent:"#d8c98a"},
+  corrupted:{skin:"#b9a898", cloth:"#8a6b8f", cloth2:"#6a4f70", accent:"#5fd6c2"},
 };
 
 function eyesFor(mood){
@@ -1161,83 +1430,92 @@ function mouthFor(mood){
   return `<path d="M 96 130 Q 110 118 124 130" stroke="#2a0a2a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
 }
 
-function extrasFor(stageIdx, mood, colors){
+function extrasFor(level, hpTier, colors){
   let s = "";
-  if(stageIdx>=2){ // ears/antenna from rookie on
-    s += `<circle cx="70" cy="60" r="10" fill="${colors.body2}"/><circle cx="150" cy="60" r="10" fill="${colors.body2}"/>`;
+  if(level>=5){ // sword from adventurer on
+    s += `<rect x="160" y="128" width="7" height="55" rx="2" fill="#d8dee8" stroke="#8f97a8" stroke-width="1"/>
+          <rect x="153" y="176" width="21" height="9" rx="3" fill="#8b5a2b"/>`;
   }
-  if(stageIdx>=3){ // small wings from champion on
-    s += `<path d="M 40 110 Q 10 90 20 140 Q 45 140 40 110" fill="${colors.accent}" opacity="0.9"/>
-          <path d="M 180 110 Q 210 90 200 140 Q 175 140 180 110" fill="${colors.accent}" opacity="0.9"/>`;
+  if(level>=10){ // shield + chest highlight from warrior on
+    s += `<ellipse cx="55" cy="165" rx="14" ry="18" fill="#c9a94f" stroke="#8a6d1f" stroke-width="2"/>
+          <rect x="82" y="132" width="56" height="18" rx="8" fill="#e8edf6" opacity="0.55"/>`;
   }
-  if(stageIdx>=4){ // horn from perfect on
-    s += `<path d="M 110 40 L 100 65 L 120 65 Z" fill="${colors.accent}"/>`;
+  if(level>=20){ // helmet from knight on
+    s += `<path d="M 66 88 A 44 44 0 0 1 154 88 L 154 72 L 66 72 Z" fill="#b0b8c9" stroke="#7c8698" stroke-width="2"/>`;
   }
-  if(stageIdx>=5){ // crown / aura at mega
-    s += `<circle cx="110" cy="110" r="95" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.5"/>
+  if(level>=40){ // aura + crown at hero tier
+    s += `<circle cx="110" cy="115" r="98" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.4"/>
           <path d="M 90 30 L 100 45 L 110 25 L 120 45 L 130 30 L 125 55 L 95 55 Z" fill="#ffd76a"/>`;
   }
-  if(mood==="corrupted"){
-    s += `<ellipse cx="150" cy="55" rx="14" ry="9" fill="#555" opacity="0.7"/>
-          <ellipse cx="162" cy="45" rx="10" ry="6" fill="#555" opacity="0.5"/>`;
+  if(hpTier==="corrupted"){
+    s += `<ellipse cx="150" cy="55" rx="12" ry="8" fill="#7dd3fc" opacity="0.8"/>`;
   }
   return s;
 }
 
-function renderCharacterSVG(charState){
-  const colors = MOOD_COLORS[charState.mood];
-  const stageIdx = charState.stageIdx;
-  // egg stage: simple oval, no face
-  if(stageIdx===0){
-    return `<svg viewBox="0 0 220 220" width="100%" height="100%">
-      <ellipse cx="110" cy="120" rx="70" ry="85" fill="${colors.body}" stroke="${colors.body2}" stroke-width="4"/>
-      ${eyesFor(charState.mood)}
-    </svg>`;
-  }
-  const bodyRy = charState.mood==="corrupted" ? 78 : 88;
-  const bodyRx = charState.mood==="corrupted" ? 90 : 78;
+function capeFor(level, colors){
+  if(level<20) return "";
+  return `<path d="M 85 134 Q 58 175 72 208 L 148 208 Q 162 175 135 134 Z" fill="${colors.cloth2}" opacity="0.85"/>`;
+}
+
+function renderHeroSVG(rpg){
+  const colors = HP_COLORS[rpg.hpTier];
+  const level = rpg.level;
+  const bodyOffsetY = rpg.hpTier==="corrupted" ? 6 : 0;
+
   return `<svg viewBox="0 0 220 220" width="100%" height="100%">
-    <g>
-      ${stageIdx>=5 ? `<circle cx="110" cy="115" r="95" fill="none" stroke="${colors.accent}" stroke-width="3" opacity="0.35"/>` : ""}
-      <ellipse cx="110" cy="122" rx="${bodyRx}" ry="${bodyRy}" fill="${colors.body}" stroke="${colors.body2}" stroke-width="4"/>
-      ${extrasFor(stageIdx, charState.mood, colors)}
-      <ellipse cx="90" cy="95" rx="16" ry="9" fill="#ffffff" opacity="0.3"/>
-      ${eyesFor(charState.mood)}
-      ${mouthFor(charState.mood)}
-      <ellipse cx="90" cy="115" rx="8" ry="5" fill="#ff9a9a" opacity="0.5"/>
-      <ellipse cx="130" cy="115" rx="8" ry="5" fill="#ff9a9a" opacity="0.5"/>
+    <g transform="translate(0 ${bodyOffsetY})">
+      ${capeFor(level, colors)}
+      <path d="M 80 145 L 55 185" stroke="${colors.cloth2}" stroke-width="16" stroke-linecap="round"/>
+      <path d="M 140 145 L 165 185" stroke="${colors.cloth2}" stroke-width="16" stroke-linecap="round"/>
+      <rect x="86" y="180" width="18" height="26" rx="6" fill="${colors.cloth2}"/>
+      <rect x="116" y="180" width="18" height="26" rx="6" fill="${colors.cloth2}"/>
+      <rect x="78" y="128" width="64" height="58" rx="18" fill="${colors.cloth}" stroke="${colors.cloth2}" stroke-width="3"/>
+      <circle cx="110" cy="88" r="46" fill="${colors.skin}" stroke="#c99a6f" stroke-width="3"/>
+      ${extrasFor(level, rpg.hpTier, colors)}
+      ${eyesFor(rpg.hpTier)}
+      ${mouthFor(rpg.hpTier)}
     </g>
   </svg>`;
 }
 
 // ---------- rendering: character view ----------
 function renderCharacterView(){
-  const cs = computeCharacterState();
-  document.getElementById("char-svg-box").innerHTML = renderCharacterSVG(cs);
-  document.getElementById("char-stage-label").textContent = `第${cs.stageIdx+1}段階`;
-  document.getElementById("char-name-label").textContent = cs.stage.name;
-  renderSpeech(cs);
+  const rpg = computeRPGState();
+  document.getElementById("char-svg-box").innerHTML = renderHeroSVG(rpg);
+  document.getElementById("char-svg-box").classList.toggle("hp-danger", rpg.hpTier==="corrupted");
+  document.getElementById("char-stage-label").textContent = `Lv.${rpg.level}`;
+  document.getElementById("char-name-label").textContent = rpg.tier.name;
+  renderSpeech(rpg);
 
   const moodTag = document.getElementById("char-mood-tag");
-  const moodLabel = {happy:"元気いっぱい", tired:"ちょっと疲れ気味", corrupted:"荒れ気味…食生活を見直そう"}[cs.mood];
+  const moodLabel = {happy:"元気いっぱい", tired:"ちょっと疲れ気味", corrupted:"HP危険…休もう"}[rpg.hpTier];
   moodTag.textContent = moodLabel;
-  moodTag.className = "mood-tag mood-" + cs.mood;
+  moodTag.className = "mood-tag mood-" + rpg.hpTier;
 
-  const next = cs.nextStage;
-  const barPct = next ? Math.min(100, Math.round((cs.exp - cs.stage.threshold) / (next.threshold - cs.stage.threshold) * 100)) : 100;
+  const expIntoLevel = rpg.exp - rpg.expFloor;
+  const expSpan = rpg.expNext - rpg.expFloor;
+  const barPct = expSpan>0 ? Math.min(100, Math.round(expIntoLevel/expSpan*100)) : 100;
   document.getElementById("exp-bar").style.width = barPct + "%";
-  document.getElementById("exp-label").textContent = next
-    ? `次の進化「${next.name}」まで あと ${Math.max(0,next.threshold - cs.exp)} EXP`
-    : `最終形態に到達しました`;
+  document.getElementById("exp-label").textContent = `次のLv.${rpg.level+1}まで あと ${Math.max(0, rpg.expNext-rpg.exp)} EXP`;
 
-  document.getElementById("stat-streak").textContent = cs.streak;
-  document.getElementById("stat-longest").textContent = cs.longestStreak;
-  document.getElementById("stat-exp").textContent = cs.exp;
+  document.getElementById("hp-bar").style.width = (rpg.hpRatio*100) + "%";
+  document.getElementById("hp-label").textContent = `HP ${rpg.hp} / ${rpg.maxHp}`;
+  const mpRatio = rpg.maxMp>0 ? rpg.mp/rpg.maxMp : 1;
+  document.getElementById("mp-bar").style.width = (mpRatio*100) + "%";
+  document.getElementById("mp-label").textContent = `MP ${rpg.mp} / ${rpg.maxMp}`;
+
+  const statIds = {str:"stat-str", atk:"stat-atk", vit:"stat-vit", def:"stat-def", int:"stat-int", res:"stat-res", dex:"stat-dex", agi:"stat-agi", luk:"stat-luk"};
+  Object.keys(statIds).forEach(k=>{ document.getElementById(statIds[k]).textContent = rpg[k]; });
+
+  document.getElementById("stat-streak").textContent = rpg.streak;
+  document.getElementById("stat-longest").textContent = rpg.longestStreak;
+  document.getElementById("stat-exp").textContent = rpg.exp;
 
   const badgeRow = document.getElementById("badge-row");
   badgeRow.innerHTML = "";
   BADGE_MILESTONES.forEach(m=>{
-    const on = cs.badgesEarned.has(m);
+    const on = rpg.badgesEarned.has(m);
     const el = document.createElement("div");
     el.className = "badge" + (on ? " on" : "");
     el.title = `${m}日連続達成`;
@@ -1332,9 +1610,9 @@ function renderCalendarGoals(){
 }
 
 function renderCalendarStreakStats(){
-  const cs = computeCharacterState();
-  document.getElementById("cal-stat-streak").textContent = cs.streak;
-  document.getElementById("cal-stat-longest").textContent = cs.longestStreak;
+  const rpg = computeRPGState();
+  document.getElementById("cal-stat-streak").textContent = rpg.streak;
+  document.getElementById("cal-stat-longest").textContent = rpg.longestStreak;
 }
 
 function renderCalendar(){
@@ -1372,8 +1650,8 @@ function renderCalendar(){
 
     let html = `<div class="d">${d}</div>`;
     if(status!=="none"){
-      const csAsOf = computeCharacterState(dateStr);
-      html += `<div class="mini-avatar ring-${status}">${renderCharacterSVG(csAsOf)}</div>`;
+      const rpgAsOf = computeRPGState(dateStr);
+      html += `<div class="mini-avatar ring-${status}">${renderHeroSVG(rpgAsOf)}</div>`;
     }
     html += weightCellHtml(dateStr);
 
@@ -1729,6 +2007,7 @@ document.getElementById("steps-save").addEventListener("click", ()=>{
   }
   saveState();
   renderExercisePage();
+  renderCharacterView();
 });
 
 document.getElementById("exercise-save").addEventListener("click", ()=>{
@@ -1737,17 +2016,133 @@ document.getElementById("exercise-save").addEventListener("click", ()=>{
   const intensity = getSelectedValue("exercise-intensity-grid", "intensity");
   const hours = parseInt(document.getElementById("exercise-hours").value, 10) || 0;
   const minutes = parseInt(document.getElementById("exercise-minutes").value, 10) || 0;
+  const formPractice = document.getElementById("exercise-form-practice").checked;
   if(!type){ alert("運動の種目を選んでください"); return; }
   if(!intensity){ alert("運動強度を選んでください"); return; }
   if(hours<=0 && minutes<=0){ alert("運動時間を入力してください"); return; }
   if(!state.exercises[today]) state.exercises[today] = [];
-  state.exercises[today].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity});
+  state.exercises[today].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity, formPractice});
   saveState();
   clearSelected("exercise-type-grid");
   clearSelected("exercise-intensity-grid");
   document.getElementById("exercise-hours").value = "";
   document.getElementById("exercise-minutes").value = "";
+  document.getElementById("exercise-form-practice").checked = false;
   renderExercisePage();
+  renderCharacterView();
+});
+
+// ---------- lifelog page (today only) ----------
+function renderSimpleSessionList(dateStr, storeObj, listElId, formatLabel, onChange){
+  const entries = storeObj[dateStr] || [];
+  const listBox = document.getElementById(listElId);
+  listBox.innerHTML = "";
+  if(entries.length===0){
+    listBox.innerHTML = `<div class="empty-msg">まだ記録がありません</div>`;
+    return;
+  }
+  entries.forEach(e=>{
+    const row = document.createElement("div");
+    row.className = "meal-entry";
+    row.innerHTML = `
+      <div class="meal-entry-top">
+        <span class="slot-time">${escapeHtml(formatLabel(e))}</span>
+        <button class="del" data-id="${e.id}">🗑</button>
+      </div>
+    `;
+    row.querySelector(".del").addEventListener("click", ()=>{
+      storeObj[dateStr] = entries.filter(x=>x.id!==e.id);
+      saveState();
+      onChange();
+    });
+    listBox.appendChild(row);
+  });
+}
+
+wireSelectGrid("sleep-quality-grid");
+wireSelectGrid("stress-grid");
+
+function renderLifelogPage(){
+  const today = todayStr();
+  const d = new Date();
+  document.getElementById("lifelog-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+
+  const sleepEntry = state.sleep[today];
+  document.getElementById("sleep-hours").value = sleepEntry ? sleepEntry.hours : "";
+  clearSelected("sleep-quality-grid");
+  if(sleepEntry){
+    const btn = document.querySelector(`#sleep-quality-grid [data-quality="${sleepEntry.quality}"]`);
+    if(btn) btn.classList.add("selected");
+  }
+
+  renderSimpleSessionList(today, state.rests, "rest-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
+  renderSimpleSessionList(today, state.reading, "reading-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
+  renderSimpleSessionList(today, state.challenges, "challenge-entries-list", e=> e.note || "挑戦を記録", renderLifelogPage);
+
+  const stressEntry = state.stress[today];
+  clearSelected("stress-grid");
+  if(stressEntry){
+    const btn = document.querySelector(`#stress-grid [data-rating="${stressEntry.rating}"]`);
+    if(btn) btn.classList.add("selected");
+  }
+}
+
+document.getElementById("sleep-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const hours = parseFloat(document.getElementById("sleep-hours").value);
+  const quality = getSelectedValue("sleep-quality-grid", "quality");
+  if(isNaN(hours) || hours<=0){ alert("睡眠時間を入力してください"); return; }
+  if(!quality){ alert("睡眠の質を選んでください"); return; }
+  state.sleep[today] = {hours, quality};
+  saveState();
+  renderLifelogPage();
+  renderCharacterView();
+  renderCalendar();
+});
+
+document.getElementById("rest-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const minutes = parseInt(document.getElementById("rest-minutes").value, 10);
+  if(isNaN(minutes) || minutes<=0){ alert("休憩・瞑想の時間を入力してください"); return; }
+  if(!state.rests[today]) state.rests[today] = [];
+  state.rests[today].push({id:"r"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
+  saveState();
+  document.getElementById("rest-minutes").value = "";
+  renderLifelogPage();
+  renderCharacterView();
+});
+
+document.getElementById("reading-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const minutes = parseInt(document.getElementById("reading-minutes").value, 10);
+  if(isNaN(minutes) || minutes<=0){ alert("読書・学習の時間を入力してください"); return; }
+  if(!state.reading[today]) state.reading[today] = [];
+  state.reading[today].push({id:"rd"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
+  saveState();
+  document.getElementById("reading-minutes").value = "";
+  renderLifelogPage();
+  renderCharacterView();
+});
+
+document.getElementById("stress-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const rating = getSelectedValue("stress-grid", "rating");
+  if(!rating){ alert("良好・普通・しんどいのいずれかを選んでください"); return; }
+  state.stress[today] = {rating};
+  saveState();
+  renderLifelogPage();
+  renderCharacterView();
+});
+
+document.getElementById("challenge-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const note = document.getElementById("challenge-note").value.trim();
+  if(!state.challenges[today]) state.challenges[today] = [];
+  state.challenges[today].push({id:"c"+Date.now()+Math.random().toString(36).slice(2,6), note});
+  saveState();
+  document.getElementById("challenge-note").value = "";
+  renderLifelogPage();
+  renderCharacterView();
 });
 
 // ---------- nav ----------
@@ -1761,6 +2156,7 @@ function switchView(name){
   if(name==="cal") renderCalendar();
   if(name==="record") renderRecordPage();
   if(name==="exercise") renderExercisePage();
+  if(name==="lifelog") renderLifelogPage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
   b.addEventListener("click", ()=> switchView(b.dataset.view));
@@ -1774,6 +2170,7 @@ function renderAll(){
   renderSettings();
   renderRecordPage();
   renderExercisePage();
+  renderLifelogPage();
 }
 
 renderAll();
