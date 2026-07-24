@@ -609,6 +609,31 @@
     text-align:right;
   }
   .duration-row span{font-size:13px; color:var(--muted);}
+
+  .date-select-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:4px;
+  }
+  .date-select-row label{font-size:13px; color:var(--muted); white-space:nowrap;}
+  .date-select-row select{
+    flex:1;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:14px;
+  }
+
+  .saved-value{
+    font-size:13px;
+    font-weight:700;
+    color:var(--good);
+    white-space:nowrap;
+  }
+  .saved-value.empty{color:var(--muted); font-weight:400;}
   .checkbox-row{
     display:flex;
     align-items:center;
@@ -748,7 +773,11 @@
   <!-- RECORD VIEW -->
   <section class="view" id="view-record">
     <div class="card">
-      <h2>記録 (<span id="record-date-label"></span>)</h2>
+      <h2>記録</h2>
+      <div class="date-select-row">
+        <label for="record-date-select">対象日</label>
+        <select id="record-date-select"></select>
+      </div>
       <div class="day-status-banner" id="record-status-banner"></div>
     </div>
 
@@ -758,6 +787,7 @@
         <label for="record-weight-input">体重</label>
         <input type="number" step="0.1" min="1" id="record-weight-input" placeholder="未記録">
         <span class="unit">kg</span>
+        <span class="saved-value empty" id="record-weight-saved">未保存</span>
       </div>
       <div class="setting-note" id="record-weight-note"></div>
       <button class="quick-log-btn" id="record-weight-save">保存する</button>
@@ -795,15 +825,20 @@
   <!-- EXERCISE VIEW -->
   <section class="view" id="view-exercise">
     <div class="card">
-      <h2>運動 (<span id="exercise-date-label"></span>)</h2>
+      <h2>運動</h2>
+      <div class="date-select-row">
+        <label for="exercise-date-select">対象日</label>
+        <select id="exercise-date-select"></select>
+      </div>
     </div>
 
     <div class="card">
-      <h2>今日の歩数</h2>
+      <h2>歩数</h2>
       <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
         <label for="steps-input">歩数</label>
         <input type="number" step="1" min="0" id="steps-input" placeholder="未記録">
         <span class="unit">歩</span>
+        <span class="saved-value empty" id="steps-saved">未保存</span>
       </div>
       <button class="quick-log-btn" id="steps-save" style="margin-top:8px;">保存する</button>
     </div>
@@ -848,13 +883,18 @@
   <!-- LIFELOG VIEW -->
   <section class="view" id="view-lifelog">
     <div class="card">
-      <h2>ライフログ (<span id="lifelog-date-label"></span>)</h2>
+      <h2>ライフログ</h2>
+      <div class="date-select-row">
+        <label for="lifelog-date-select">対象日</label>
+        <select id="lifelog-date-select"></select>
+      </div>
     </div>
 
     <div class="card">
-      <h2>今日の睡眠</h2>
+      <h2>睡眠</h2>
       <div class="duration-row">
         <input type="number" min="0" step="0.5" id="sleep-hours" placeholder="0"><span>時間</span>
+        <span class="saved-value empty" id="sleep-hours-saved">未保存</span>
       </div>
       <p class="sub-label">睡眠の質</p>
       <div class="slot-grid" id="sleep-quality-grid">
@@ -2042,21 +2082,54 @@ document.getElementById("modal-meal-save").addEventListener("click", ()=>{
 });
 
 // ---------- record page (today only) ----------
+let recordSelectedDate = todayStr();
+
+function dateOptionLabel(dateStr){
+  const d = parseDateStr(dateStr);
+  const wd = ["日","月","火","水","木","金","土"][d.getDay()];
+  const base = `${d.getMonth()+1}/${d.getDate()}(${wd})`;
+  return dateStr===todayStr() ? `${base} ・今日` : base;
+}
+
+function populateDateSelect(selectId, selectedDate){
+  const sel = document.getElementById(selectId);
+  const dates = lastNDates(30).slice().reverse();
+  sel.innerHTML = dates.map(d=>
+    `<option value="${d}"${d===selectedDate?" selected":""}>${dateOptionLabel(d)}</option>`
+  ).join("");
+}
+
+function setSavedValueDisplay(elId, value, formatFn){
+  const el = document.getElementById(elId);
+  if(value==null){
+    el.textContent = "未保存";
+    el.classList.add("empty");
+  }else{
+    el.textContent = `✓ ${formatFn(value)}`;
+    el.classList.remove("empty");
+  }
+}
+
 function renderRecordPage(){
-  const today = todayStr();
-  const d = new Date();
-  document.getElementById("record-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
-  document.getElementById("record-weight-input").value = state.weights[today] ?? "";
+  populateDateSelect("record-date-select", recordSelectedDate);
+  const w = state.weights[recordSelectedDate] ?? null;
+  document.getElementById("record-weight-input").value = w ?? "";
+  setSavedValueDisplay("record-weight-saved", w, v=>`${v}kg`);
   document.getElementById("record-meal-time").value = nowTimeStr();
 
   renderRecordWeightNote();
-  renderMealEntriesInto(today, "record-meal-entries-list", renderRecordPage);
-  updateStatusBanner(today, "record-status-banner");
+  renderMealEntriesInto(recordSelectedDate, "record-meal-entries-list", renderRecordPage);
+  updateStatusBanner(recordSelectedDate, "record-status-banner");
 }
+
+document.getElementById("record-date-select").addEventListener("change", (e)=>{
+  recordSelectedDate = e.target.value;
+  renderRecordPage();
+});
 
 function renderRecordWeightNote(){
   const note = document.getElementById("record-weight-note");
-  const w = state.weights[todayStr()];
+  const w = state.weights[recordSelectedDate];
   const goal = state.profile.goalWeight;
   if(w==null || goal==null || isNaN(goal)){
     note.textContent = "";
@@ -2069,28 +2142,26 @@ function renderRecordWeightNote(){
 }
 
 document.getElementById("record-weight-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const v = parseFloat(document.getElementById("record-weight-input").value);
   if(isNaN(v) || v<=0){
-    delete state.weights[today];
+    delete state.weights[recordSelectedDate];
   }else{
-    state.weights[today] = v;
+    state.weights[recordSelectedDate] = v;
   }
   saveState();
-  renderRecordWeightNote();
+  renderRecordPage();
   renderWeightCard();
   renderCalendar();
 });
 
 document.getElementById("record-meal-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const slot = getSelectedValue("record-slot-grid", "slot");
   const level = getSelectedValue("record-level-grid", "level");
   if(!slot){ alert("朝食・昼食・夕食・夜食・間食のいずれかを選んでください"); return; }
   if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
   const time = document.getElementById("record-meal-time").value || nowTimeStr();
-  if(!state.logs[today]) state.logs[today] = [];
-  state.logs[today].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
+  if(!state.logs[recordSelectedDate]) state.logs[recordSelectedDate] = [];
+  state.logs[recordSelectedDate].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
   saveState();
   clearSelected("record-slot-grid");
   clearSelected("record-level-grid");
@@ -2110,14 +2181,16 @@ function formatDuration(hours, minutes){
   return `${minutes}分`;
 }
 
+let exerciseSelectedDate = todayStr();
+
 function renderExercisePage(){
-  const today = todayStr();
-  const d = new Date();
-  document.getElementById("exercise-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
-  document.getElementById("steps-input").value = state.steps[today] ?? "";
+  populateDateSelect("exercise-date-select", exerciseSelectedDate);
+  const steps = state.steps[exerciseSelectedDate] ?? null;
+  document.getElementById("steps-input").value = steps ?? "";
+  setSavedValueDisplay("steps-saved", steps, v=>`${v}歩`);
 
   const listBox = document.getElementById("exercise-entries-list");
-  const entries = exerciseEntries(today);
+  const entries = exerciseEntries(exerciseSelectedDate);
   listBox.innerHTML = "";
   if(entries.length===0){
     listBox.innerHTML = `<div class="empty-msg">まだ記録がありません。下から運動を追加してください</div>`;
@@ -2135,7 +2208,7 @@ function renderExercisePage(){
         <span class="level-chip ${intensity.chipClass}">${intensity.emoji} 強度:${intensity.label}</span>
       `;
       row.querySelector(".del").addEventListener("click", ()=>{
-        state.exercises[today] = exerciseEntries(today).filter(x=>x.id!==e.id);
+        state.exercises[exerciseSelectedDate] = exerciseEntries(exerciseSelectedDate).filter(x=>x.id!==e.id);
         saveState();
         renderExercisePage();
       });
@@ -2144,16 +2217,20 @@ function renderExercisePage(){
   }
 }
 
+document.getElementById("exercise-date-select").addEventListener("change", (e)=>{
+  exerciseSelectedDate = e.target.value;
+  renderExercisePage();
+});
+
 wireSelectGrid("exercise-type-grid");
 wireSelectGrid("exercise-intensity-grid");
 
 document.getElementById("steps-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const v = parseInt(document.getElementById("steps-input").value, 10);
   if(isNaN(v) || v<0){
-    delete state.steps[today];
+    delete state.steps[exerciseSelectedDate];
   }else{
-    state.steps[today] = v;
+    state.steps[exerciseSelectedDate] = v;
   }
   saveState();
   renderExercisePage();
@@ -2161,7 +2238,6 @@ document.getElementById("steps-save").addEventListener("click", ()=>{
 });
 
 document.getElementById("exercise-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const type = getSelectedValue("exercise-type-grid", "type");
   const intensity = getSelectedValue("exercise-intensity-grid", "intensity");
   const hours = parseInt(document.getElementById("exercise-hours").value, 10) || 0;
@@ -2170,8 +2246,8 @@ document.getElementById("exercise-save").addEventListener("click", ()=>{
   if(!type){ alert("運動の種目を選んでください"); return; }
   if(!intensity){ alert("運動強度を選んでください"); return; }
   if(hours<=0 && minutes<=0){ alert("運動時間を入力してください"); return; }
-  if(!state.exercises[today]) state.exercises[today] = [];
-  state.exercises[today].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity, formPractice});
+  if(!state.exercises[exerciseSelectedDate]) state.exercises[exerciseSelectedDate] = [];
+  state.exercises[exerciseSelectedDate].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity, formPractice});
   saveState();
   clearSelected("exercise-type-grid");
   clearSelected("exercise-intensity-grid");
@@ -2212,24 +2288,25 @@ function renderSimpleSessionList(dateStr, storeObj, listElId, formatLabel, onCha
 wireSelectGrid("sleep-quality-grid");
 wireSelectGrid("stress-grid");
 
-function renderLifelogPage(){
-  const today = todayStr();
-  const d = new Date();
-  document.getElementById("lifelog-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+let lifelogSelectedDate = todayStr();
 
-  const sleepEntry = state.sleep[today];
+function renderLifelogPage(){
+  populateDateSelect("lifelog-date-select", lifelogSelectedDate);
+
+  const sleepEntry = state.sleep[lifelogSelectedDate];
   document.getElementById("sleep-hours").value = sleepEntry ? sleepEntry.hours : "";
+  setSavedValueDisplay("sleep-hours-saved", sleepEntry ? sleepEntry.hours : null, v=>`${v}時間`);
   clearSelected("sleep-quality-grid");
   if(sleepEntry){
     const btn = document.querySelector(`#sleep-quality-grid [data-quality="${sleepEntry.quality}"]`);
     if(btn) btn.classList.add("selected");
   }
 
-  renderSimpleSessionList(today, state.rests, "rest-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
-  renderSimpleSessionList(today, state.reading, "reading-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
-  renderSimpleSessionList(today, state.challenges, "challenge-entries-list", e=> e.note || "挑戦を記録", renderLifelogPage);
+  renderSimpleSessionList(lifelogSelectedDate, state.rests, "rest-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
+  renderSimpleSessionList(lifelogSelectedDate, state.reading, "reading-entries-list", e=>`${e.minutes}分`, renderLifelogPage);
+  renderSimpleSessionList(lifelogSelectedDate, state.challenges, "challenge-entries-list", e=> e.note || "挑戦を記録", renderLifelogPage);
 
-  const stressEntry = state.stress[today];
+  const stressEntry = state.stress[lifelogSelectedDate];
   clearSelected("stress-grid");
   if(stressEntry){
     const btn = document.querySelector(`#stress-grid [data-rating="${stressEntry.rating}"]`);
@@ -2237,13 +2314,17 @@ function renderLifelogPage(){
   }
 }
 
+document.getElementById("lifelog-date-select").addEventListener("change", (e)=>{
+  lifelogSelectedDate = e.target.value;
+  renderLifelogPage();
+});
+
 document.getElementById("sleep-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const hours = parseFloat(document.getElementById("sleep-hours").value);
   const quality = getSelectedValue("sleep-quality-grid", "quality");
   if(isNaN(hours) || hours<=0){ alert("睡眠時間を入力してください"); return; }
   if(!quality){ alert("睡眠の質を選んでください"); return; }
-  state.sleep[today] = {hours, quality};
+  state.sleep[lifelogSelectedDate] = {hours, quality};
   saveState();
   renderLifelogPage();
   renderCharacterView();
@@ -2251,11 +2332,10 @@ document.getElementById("sleep-save").addEventListener("click", ()=>{
 });
 
 document.getElementById("rest-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const minutes = parseInt(document.getElementById("rest-minutes").value, 10);
   if(isNaN(minutes) || minutes<=0){ alert("休憩・瞑想の時間を入力してください"); return; }
-  if(!state.rests[today]) state.rests[today] = [];
-  state.rests[today].push({id:"r"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
+  if(!state.rests[lifelogSelectedDate]) state.rests[lifelogSelectedDate] = [];
+  state.rests[lifelogSelectedDate].push({id:"r"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
   saveState();
   document.getElementById("rest-minutes").value = "";
   renderLifelogPage();
@@ -2263,11 +2343,10 @@ document.getElementById("rest-save").addEventListener("click", ()=>{
 });
 
 document.getElementById("reading-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const minutes = parseInt(document.getElementById("reading-minutes").value, 10);
   if(isNaN(minutes) || minutes<=0){ alert("読書・学習の時間を入力してください"); return; }
-  if(!state.reading[today]) state.reading[today] = [];
-  state.reading[today].push({id:"rd"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
+  if(!state.reading[lifelogSelectedDate]) state.reading[lifelogSelectedDate] = [];
+  state.reading[lifelogSelectedDate].push({id:"rd"+Date.now()+Math.random().toString(36).slice(2,6), minutes});
   saveState();
   document.getElementById("reading-minutes").value = "";
   renderLifelogPage();
@@ -2275,20 +2354,18 @@ document.getElementById("reading-save").addEventListener("click", ()=>{
 });
 
 document.getElementById("stress-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const rating = getSelectedValue("stress-grid", "rating");
   if(!rating){ alert("良好・普通・しんどいのいずれかを選んでください"); return; }
-  state.stress[today] = {rating};
+  state.stress[lifelogSelectedDate] = {rating};
   saveState();
   renderLifelogPage();
   renderCharacterView();
 });
 
 document.getElementById("challenge-save").addEventListener("click", ()=>{
-  const today = todayStr();
   const note = document.getElementById("challenge-note").value.trim();
-  if(!state.challenges[today]) state.challenges[today] = [];
-  state.challenges[today].push({id:"c"+Date.now()+Math.random().toString(36).slice(2,6), note});
+  if(!state.challenges[lifelogSelectedDate]) state.challenges[lifelogSelectedDate] = [];
+  state.challenges[lifelogSelectedDate].push({id:"c"+Date.now()+Math.random().toString(36).slice(2,6), note});
   saveState();
   document.getElementById("challenge-note").value = "";
   renderLifelogPage();
@@ -2441,9 +2518,9 @@ function switchView(name){
     v.classList.toggle("active", v.id==="view-"+name);
   });
   if(name==="cal") renderCalendar();
-  if(name==="record") renderRecordPage();
-  if(name==="exercise") renderExercisePage();
-  if(name==="lifelog") renderLifelogPage();
+  if(name==="record"){ recordSelectedDate = todayStr(); renderRecordPage(); }
+  if(name==="exercise"){ exerciseSelectedDate = todayStr(); renderExercisePage(); }
+  if(name==="lifelog"){ lifelogSelectedDate = todayStr(); renderLifelogPage(); }
   if(name==="history") renderHistoryPage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
