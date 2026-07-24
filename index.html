@@ -104,6 +104,42 @@
     width:220px;
     height:220px;
   }
+  .speech-bubble{
+    position:relative;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:12px 16px;
+    max-width:260px;
+    margin:0 auto 14px;
+    cursor:pointer;
+    transition:transform .15s;
+    user-select:none;
+  }
+  .speech-bubble:hover{transform:scale(1.03);}
+  .speech-bubble:active{transform:scale(0.97);}
+  .speech-bubble p{
+    margin:0;
+    font-size:13px;
+    line-height:1.5;
+    text-align:center;
+  }
+  .speech-bubble::after{
+    content:"";
+    position:absolute;
+    bottom:-8px;
+    left:50%;
+    transform:translateX(-50%);
+    width:0; height:0;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
+    border-top:8px solid var(--panel2);
+  }
+  .speech-hint{
+    font-size:10px;
+    color:var(--muted);
+    margin:-10px 0 12px;
+  }
   .mood-tag{
     display:inline-block;
     margin-top:6px;
@@ -519,6 +555,10 @@
     <div class="card char-wrap">
       <div class="char-stage" id="char-stage-label"></div>
       <div class="char-name" id="char-name-label"></div>
+
+      <div class="speech-bubble" id="char-speech-bubble"><p id="char-speech-text"></p></div>
+      <div class="speech-hint">タップで話しかけよう</div>
+
       <div class="char-svg-box" id="char-svg-box"></div>
       <div class="mood-tag" id="char-mood-tag"></div>
 
@@ -899,6 +939,74 @@ const STAGES = [
 ];
 const BADGE_MILESTONES = [3,7,14,30,60,100];
 
+const SPEECH = {
+  milestone: (streak)=> [
+    `やった！${streak}日連続達成だよ！すごいね！`,
+    `${streak}日連続、自分をほめてあげて！`,
+    `ここまで続いたのは、コツコツ頑張ったからだよ！`,
+  ],
+  corrupted: [
+    "最近ちょっと調子悪そう…一緒に立て直そう",
+    "うぅ…ドカ食いが続いてるみたい。少しずつで大丈夫だよ",
+    "無理しなくていいから、次の1食から戻していこう",
+  ],
+  notLoggedNoHistory: [
+    "はじめまして！今日から一緒にがんばろうね",
+    "まずは今日の記録からはじめてみよう！",
+    "『記録』タブからごはんを教えてね",
+  ],
+  notLoggedToday: [
+    "今日は記録した？",
+    "今日のごはん、教えて！",
+    "まだ今日の記録がないみたい、待ってるよ",
+    "今日はどうだった？記録しにきてね",
+  ],
+  good: [
+    "今日もえらい！その調子！",
+    "ナイス、目標達成だね！",
+    "がんばってるの、ちゃんと見てるよ",
+    "いい調子！明日もこの調子でいこう",
+  ],
+  warn: [
+    "今日はちょっと食べすぎたかな？次でリカバリーしよう",
+    "無理しないでね、明日からまた頑張ろう",
+    "1回くらい大丈夫、切り替えていこう",
+  ],
+  bad: [
+    "今日は大変だったね…でも大丈夫、また明日から",
+    "ドカ食いしちゃった日もあるよね。責めなくていいよ",
+    "そんな日もあるよ。次の1食から戻そう",
+  ],
+};
+let lastSpeechText = "";
+
+function speechCategory(cs){
+  if(BADGE_MILESTONES.includes(cs.streak)) return "milestone";
+  if(cs.mood==="corrupted") return "corrupted";
+  if(allLoggedDatesSorted().length===0) return "notLoggedNoHistory";
+  const todayStatus = dayStatus(todayStr());
+  if(todayStatus==="none") return "notLoggedToday";
+  return todayStatus;
+}
+
+function pickSpeechLine(category, cs){
+  const lines = typeof SPEECH[category]==="function" ? SPEECH[category](cs.streak) : SPEECH[category];
+  if(lines.length===1) return lines[0];
+  let choice;
+  do{ choice = lines[Math.floor(Math.random()*lines.length)]; }while(choice===lastSpeechText);
+  return choice;
+}
+
+function renderSpeech(cs){
+  const text = pickSpeechLine(speechCategory(cs), cs);
+  lastSpeechText = text;
+  document.getElementById("char-speech-text").textContent = text;
+}
+
+document.getElementById("char-speech-bubble").addEventListener("click", ()=>{
+  renderSpeech(computeCharacterState());
+});
+
 function allLoggedDatesSorted(){
   return Object.keys(state.logs).filter(d=>state.logs[d] && state.logs[d].length>0).sort();
 }
@@ -1020,6 +1128,7 @@ function renderCharacterView(){
   document.getElementById("char-svg-box").innerHTML = renderCharacterSVG(cs);
   document.getElementById("char-stage-label").textContent = `第${cs.stageIdx+1}段階`;
   document.getElementById("char-name-label").textContent = cs.stage.name;
+  renderSpeech(cs);
 
   const moodTag = document.getElementById("char-mood-tag");
   const moodLabel = {happy:"元気いっぱい", tired:"ちょっと疲れ気味", corrupted:"荒れ気味…食生活を見直そう"}[cs.mood];
