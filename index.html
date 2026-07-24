@@ -374,22 +374,22 @@
   .weight-row .unit{font-size:13px; color:var(--muted);}
 
   .meal-entry{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
     padding:10px 4px;
     border-bottom:1px solid var(--border);
     font-size:13px;
   }
   .meal-entry:last-child{border-bottom:none;}
-  .meal-entry .time{
+  .meal-entry-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .meal-entry .slot-time{
     font-variant-numeric:tabular-nums;
-    color:var(--muted);
-    width:56px;
+    font-weight:700;
   }
   .meal-entry .level-chip{
-    flex:1;
-    margin:0 10px;
     padding:4px 10px;
     border-radius:999px;
     font-size:12px;
@@ -416,6 +416,33 @@
     color:var(--muted);
     font-weight:600;
   }
+  .sub-label{
+    font-size:12px;
+    color:var(--muted);
+    margin:0 0 8px;
+    font-weight:600;
+  }
+  .slot-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .slot-btn{
+    flex:1 1 30%;
+    border:2px solid var(--border);
+    background:var(--panel2);
+    color:var(--text);
+    border-radius:10px;
+    padding:9px 4px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+  }
+  .slot-btn:hover, .slot-btn:active{background:rgba(124,140,255,.15);}
+  .slot-btn.selected{background:rgba(124,140,255,.22); border-color:var(--accent);}
+
   .time-row{
     display:flex;
     align-items:center;
@@ -551,15 +578,24 @@
       <div id="record-meal-entries-list"></div>
       <div class="add-meal-box">
         <h4>食事を追加</h4>
+        <p class="sub-label">いつの食事ですか?</p>
+        <div class="slot-grid" id="record-slot-grid">
+          <button class="sel-btn slot-btn" data-slot="breakfast">朝食</button>
+          <button class="sel-btn slot-btn" data-slot="lunch">昼食</button>
+          <button class="sel-btn slot-btn" data-slot="dinner">夕食</button>
+          <button class="sel-btn slot-btn" data-slot="late">夜食</button>
+          <button class="sel-btn slot-btn" data-slot="snack">間食</button>
+        </div>
         <div class="time-row">
           <label for="record-meal-time">時間</label>
           <input type="time" id="record-meal-time">
         </div>
+        <p class="sub-label">内容はどうでしたか?</p>
         <div class="level-grid" id="record-level-grid">
-          <button class="level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
-          <button class="level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
-          <button class="level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
-          <button class="level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
+          <button class="sel-btn level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
+          <button class="sel-btn level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
+          <button class="sel-btn level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
+          <button class="sel-btn level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
         </div>
         <button class="quick-log-btn" id="record-meal-save">保存する</button>
       </div>
@@ -685,15 +721,24 @@
 
     <div class="add-meal-box">
       <h4>食事を追加</h4>
+      <p class="sub-label">いつの食事ですか?</p>
+      <div class="slot-grid" id="modal-slot-grid">
+        <button class="sel-btn slot-btn" data-slot="breakfast">朝食</button>
+        <button class="sel-btn slot-btn" data-slot="lunch">昼食</button>
+        <button class="sel-btn slot-btn" data-slot="dinner">夕食</button>
+        <button class="sel-btn slot-btn" data-slot="late">夜食</button>
+        <button class="sel-btn slot-btn" data-slot="snack">間食</button>
+      </div>
       <div class="time-row">
         <label for="new-meal-time">時間</label>
         <input type="time" id="new-meal-time">
       </div>
+      <p class="sub-label">内容はどうでしたか?</p>
       <div class="level-grid" id="modal-level-grid">
-        <button class="level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
-        <button class="level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
-        <button class="level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
-        <button class="level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
+        <button class="sel-btn level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
+        <button class="sel-btn level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
+        <button class="sel-btn level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
+        <button class="sel-btn level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
       </div>
       <button class="quick-log-btn" id="modal-meal-save">保存する</button>
     </div>
@@ -711,6 +756,14 @@ const LEVELS = {
   normal: {label:"普通",     emoji:"🍚", chipClass:"chip-normal"},
   light:  {label:"軽め",     emoji:"🥗", chipClass:"chip-light"},
   fast:   {label:"絶食",     emoji:"💧", chipClass:"chip-fast"},
+};
+
+const MEAL_SLOTS = {
+  breakfast: {label:"朝食", defaultTime:"07:00"},
+  lunch:     {label:"昼食", defaultTime:"12:00"},
+  dinner:    {label:"夕食", defaultTime:"19:00"},
+  late:      {label:"夜食", defaultTime:"23:00"},
+  snack:     {label:"間食", defaultTime:"15:00"},
 };
 
 const DEFAULT_SETTINGS = { bingeThreshold: 2, weeklyBingeTarget: 2, monthlyBingeTarget: 5 };
@@ -1244,7 +1297,8 @@ function openDayModal(dateStr){
   renderModalWeightNote();
 
   renderMealEntries();
-  clearSelectedLevel("modal-level-grid");
+  clearSelected("modal-slot-grid");
+  clearSelected("modal-level-grid");
   document.getElementById("modal-overlay").classList.add("open");
 }
 
@@ -1281,12 +1335,16 @@ function renderMealEntriesInto(dateStr, listElId, onChange){
   }else{
     entries.forEach(e=>{
       const lv = LEVELS[e.level];
+      const slot = MEAL_SLOTS[e.slot];
+      const slotLabel = slot ? slot.label : "―";
       const row = document.createElement("div");
       row.className = "meal-entry";
       row.innerHTML = `
-        <span class="time">${e.time}</span>
+        <div class="meal-entry-top">
+          <span class="slot-time">${slotLabel} ・ ${e.time}</span>
+          <button class="del" data-id="${e.id}">🗑</button>
+        </div>
         <span class="level-chip ${lv.chipClass}">${lv.emoji} ${lv.label}</span>
-        <button class="del" data-id="${e.id}">🗑</button>
       `;
       row.querySelector(".del").addEventListener("click", ()=>{
         state.logs[dateStr] = dayEntries(dateStr).filter(x=>x.id!==e.id);
@@ -1305,24 +1363,33 @@ function updateStatusBanner(dateStr, bannerElId){
   banner.className = "day-status-banner banner-" + status;
 }
 
-function clearSelectedLevel(gridId){
-  document.querySelectorAll(`#${gridId} .level-btn`).forEach(b=> b.classList.remove("selected"));
+function clearSelected(gridId){
+  document.querySelectorAll(`#${gridId} .sel-btn`).forEach(b=> b.classList.remove("selected"));
 }
-function getSelectedLevel(gridId){
-  const btn = document.querySelector(`#${gridId} .level-btn.selected`);
-  return btn ? btn.dataset.level : null;
+function getSelectedValue(gridId, attr){
+  const btn = document.querySelector(`#${gridId} .sel-btn.selected`);
+  return btn ? btn.dataset[attr] : null;
 }
-function wireLevelGrid(gridId){
-  document.querySelectorAll(`#${gridId} .level-btn`).forEach(btn=>{
+function wireSelectGrid(gridId, onSelect){
+  document.querySelectorAll(`#${gridId} .sel-btn`).forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const alreadySelected = btn.classList.contains("selected");
-      clearSelectedLevel(gridId);
-      if(!alreadySelected) btn.classList.add("selected");
+      clearSelected(gridId);
+      if(!alreadySelected){
+        btn.classList.add("selected");
+        if(onSelect) onSelect(btn);
+      }
     });
   });
 }
-wireLevelGrid("modal-level-grid");
-wireLevelGrid("record-level-grid");
+wireSelectGrid("modal-level-grid");
+wireSelectGrid("record-level-grid");
+wireSelectGrid("modal-slot-grid", (btn)=>{
+  document.getElementById("new-meal-time").value = MEAL_SLOTS[btn.dataset.slot].defaultTime;
+});
+wireSelectGrid("record-slot-grid", (btn)=>{
+  document.getElementById("record-meal-time").value = MEAL_SLOTS[btn.dataset.slot].defaultTime;
+});
 
 function renderMealEntries(){
   renderMealEntriesInto(modalDateStr, "meal-entries-list", ()=>{
@@ -1334,13 +1401,16 @@ function renderMealEntries(){
 }
 
 document.getElementById("modal-meal-save").addEventListener("click", ()=>{
-  const level = getSelectedLevel("modal-level-grid");
+  const slot = getSelectedValue("modal-slot-grid", "slot");
+  const level = getSelectedValue("modal-level-grid", "level");
+  if(!slot){ alert("朝食・昼食・夕食・夜食・間食のいずれかを選んでください"); return; }
   if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
   const time = document.getElementById("new-meal-time").value || nowTimeStr();
   if(!state.logs[modalDateStr]) state.logs[modalDateStr] = [];
-  state.logs[modalDateStr].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
+  state.logs[modalDateStr].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
   saveState();
-  clearSelectedLevel("modal-level-grid");
+  clearSelected("modal-slot-grid");
+  clearSelected("modal-level-grid");
   renderMealEntries();
   renderCalendar();
   renderCharacterView();
@@ -1389,13 +1459,16 @@ document.getElementById("record-weight-save").addEventListener("click", ()=>{
 
 document.getElementById("record-meal-save").addEventListener("click", ()=>{
   const today = todayStr();
-  const level = getSelectedLevel("record-level-grid");
+  const slot = getSelectedValue("record-slot-grid", "slot");
+  const level = getSelectedValue("record-level-grid", "level");
+  if(!slot){ alert("朝食・昼食・夕食・夜食・間食のいずれかを選んでください"); return; }
   if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
   const time = document.getElementById("record-meal-time").value || nowTimeStr();
   if(!state.logs[today]) state.logs[today] = [];
-  state.logs[today].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, level});
+  state.logs[today].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
   saveState();
-  clearSelectedLevel("record-level-grid");
+  clearSelected("record-slot-grid");
+  clearSelected("record-level-grid");
   renderRecordPage();
   renderCalendar();
   renderCharacterView();
