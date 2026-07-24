@@ -700,9 +700,9 @@
 
         <p class="sub-label">運動強度</p>
         <div class="level-grid" id="exercise-intensity-grid" style="grid-template-columns:1fr 1fr 1fr;">
-          <button class="sel-btn level-btn lv-over" data-intensity="high"><span class="emoji">🔥</span>強</button>
-          <button class="sel-btn level-btn lv-normal" data-intensity="mid"><span class="emoji">⚡</span>中</button>
-          <button class="sel-btn level-btn lv-light" data-intensity="low"><span class="emoji">🌱</span>低</button>
+          <button class="sel-btn level-btn lv-over" data-intensity="high"><span class="emoji">🔴</span>強</button>
+          <button class="sel-btn level-btn lv-normal" data-intensity="mid"><span class="emoji">🟡</span>中</button>
+          <button class="sel-btn level-btn lv-light" data-intensity="low"><span class="emoji">🟢</span>低</button>
         </div>
 
         <button class="quick-log-btn" id="exercise-save">保存する</button>
@@ -885,9 +885,9 @@ const EXERCISE_TYPES = {
 };
 
 const INTENSITY = {
-  high: {label:"強", emoji:"🔥", chipClass:"chip-over"},
-  mid:  {label:"中", emoji:"⚡", chipClass:"chip-normal"},
-  low:  {label:"低", emoji:"🌱", chipClass:"chip-light"},
+  high: {label:"強", emoji:"🔴", chipClass:"chip-over"},
+  mid:  {label:"中", emoji:"🟡", chipClass:"chip-normal"},
+  low:  {label:"低", emoji:"🟢", chipClass:"chip-light"},
 };
 
 const DEFAULT_SETTINGS = { bingeThreshold: 2, weeklyBingeTarget: 2, monthlyBingeTarget: 5 };
