@@ -495,6 +495,23 @@
     font-size:14px;
     flex:1;
   }
+  .duration-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .duration-row input[type=number]{
+    width:70px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:14px;
+    text-align:right;
+  }
+  .duration-row span{font-size:13px; color:var(--muted);}
   .level-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -544,6 +561,7 @@
 <nav>
   <button data-view="char" class="active">キャラクター</button>
   <button data-view="record">記録</button>
+  <button data-view="exercise">運動</button>
   <button data-view="cal">カレンダー</button>
   <button data-view="settings">設定</button>
 </nav>
@@ -638,6 +656,56 @@
           <button class="sel-btn level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
         </div>
         <button class="quick-log-btn" id="record-meal-save">保存する</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXERCISE VIEW -->
+  <section class="view" id="view-exercise">
+    <div class="card">
+      <h2>運動 (<span id="exercise-date-label"></span>)</h2>
+    </div>
+
+    <div class="card">
+      <h2>今日の歩数</h2>
+      <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
+        <label for="steps-input">歩数</label>
+        <input type="number" step="1" min="0" id="steps-input" placeholder="未記録">
+        <span class="unit">歩</span>
+      </div>
+      <button class="quick-log-btn" id="steps-save" style="margin-top:8px;">保存する</button>
+    </div>
+
+    <div class="card">
+      <h2>運動の記録</h2>
+      <div id="exercise-entries-list"></div>
+      <div class="add-meal-box">
+        <h4>運動を追加</h4>
+        <p class="sub-label">種目を選択</p>
+        <div class="slot-grid" id="exercise-type-grid">
+          <button class="sel-btn slot-btn" data-type="strength">筋トレ</button>
+          <button class="sel-btn slot-btn" data-type="walking">ウォーキング</button>
+          <button class="sel-btn slot-btn" data-type="jogging">ジョギング</button>
+          <button class="sel-btn slot-btn" data-type="running">ランニング</button>
+          <button class="sel-btn slot-btn" data-type="yoga">ヨガ</button>
+          <button class="sel-btn slot-btn" data-type="stretch">ストレッチ</button>
+          <button class="sel-btn slot-btn" data-type="other">その他</button>
+        </div>
+
+        <p class="sub-label">運動時間</p>
+        <div class="duration-row">
+          <input type="number" min="0" id="exercise-hours" placeholder="0"><span>時間</span>
+          <input type="number" min="0" max="59" id="exercise-minutes" placeholder="0"><span>分</span>
+        </div>
+
+        <p class="sub-label">運動強度</p>
+        <div class="level-grid" id="exercise-intensity-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <button class="sel-btn level-btn lv-over" data-intensity="high"><span class="emoji">🔥</span>強</button>
+          <button class="sel-btn level-btn lv-normal" data-intensity="mid"><span class="emoji">⚡</span>中</button>
+          <button class="sel-btn level-btn lv-light" data-intensity="low"><span class="emoji">🌱</span>低</button>
+        </div>
+
+        <button class="quick-log-btn" id="exercise-save">保存する</button>
       </div>
     </div>
   </section>
@@ -806,6 +874,22 @@ const MEAL_SLOTS = {
   snack:     {label:"間食", defaultTime:"15:00"},
 };
 
+const EXERCISE_TYPES = {
+  strength: {label:"筋トレ"},
+  walking:  {label:"ウォーキング"},
+  jogging:  {label:"ジョギング"},
+  running:  {label:"ランニング"},
+  yoga:     {label:"ヨガ"},
+  stretch:  {label:"ストレッチ"},
+  other:    {label:"その他"},
+};
+
+const INTENSITY = {
+  high: {label:"強", emoji:"🔥", chipClass:"chip-over"},
+  mid:  {label:"中", emoji:"⚡", chipClass:"chip-normal"},
+  low:  {label:"低", emoji:"🌱", chipClass:"chip-light"},
+};
+
 const DEFAULT_SETTINGS = { bingeThreshold: 2, weeklyBingeTarget: 2, monthlyBingeTarget: 5 };
 const DEFAULT_PROFILE = { age: null, heightCm: null, goalWeight: null };
 
@@ -813,6 +897,8 @@ function defaultState(){
   return {
     logs: {},
     weights: {},
+    exercises: {},
+    steps: {},
     settings: Object.assign({}, DEFAULT_SETTINGS),
     profile: Object.assign({}, DEFAULT_PROFILE),
   };
@@ -826,6 +912,8 @@ function loadState(){
     return Object.assign(defaultState(), parsed, {
       logs: parsed.logs || {},
       weights: parsed.weights || {},
+      exercises: parsed.exercises || {},
+      steps: parsed.steps || {},
       settings: Object.assign({}, DEFAULT_SETTINGS, parsed.settings||{}),
       profile: Object.assign({}, DEFAULT_PROFILE, parsed.profile||{}),
     });
@@ -1583,6 +1671,85 @@ document.getElementById("record-meal-save").addEventListener("click", ()=>{
   renderCharacterView();
 });
 
+// ---------- exercise page (today only) ----------
+function exerciseEntries(dateStr){
+  return state.exercises[dateStr] || [];
+}
+
+function formatDuration(hours, minutes){
+  if(hours>0 && minutes>0) return `${hours}時間${minutes}分`;
+  if(hours>0) return `${hours}時間`;
+  return `${minutes}分`;
+}
+
+function renderExercisePage(){
+  const today = todayStr();
+  const d = new Date();
+  document.getElementById("exercise-date-label").textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+  document.getElementById("steps-input").value = state.steps[today] ?? "";
+
+  const listBox = document.getElementById("exercise-entries-list");
+  const entries = exerciseEntries(today);
+  listBox.innerHTML = "";
+  if(entries.length===0){
+    listBox.innerHTML = `<div class="empty-msg">まだ記録がありません。下から運動を追加してください</div>`;
+  }else{
+    entries.forEach(e=>{
+      const type = EXERCISE_TYPES[e.type];
+      const intensity = INTENSITY[e.intensity];
+      const row = document.createElement("div");
+      row.className = "meal-entry";
+      row.innerHTML = `
+        <div class="meal-entry-top">
+          <span class="slot-time">${type.label} ・ ${formatDuration(e.hours, e.minutes)}</span>
+          <button class="del" data-id="${e.id}">🗑</button>
+        </div>
+        <span class="level-chip ${intensity.chipClass}">${intensity.emoji} 強度:${intensity.label}</span>
+      `;
+      row.querySelector(".del").addEventListener("click", ()=>{
+        state.exercises[today] = exerciseEntries(today).filter(x=>x.id!==e.id);
+        saveState();
+        renderExercisePage();
+      });
+      listBox.appendChild(row);
+    });
+  }
+}
+
+wireSelectGrid("exercise-type-grid");
+wireSelectGrid("exercise-intensity-grid");
+
+document.getElementById("steps-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const v = parseInt(document.getElementById("steps-input").value, 10);
+  if(isNaN(v) || v<0){
+    delete state.steps[today];
+  }else{
+    state.steps[today] = v;
+  }
+  saveState();
+  renderExercisePage();
+});
+
+document.getElementById("exercise-save").addEventListener("click", ()=>{
+  const today = todayStr();
+  const type = getSelectedValue("exercise-type-grid", "type");
+  const intensity = getSelectedValue("exercise-intensity-grid", "intensity");
+  const hours = parseInt(document.getElementById("exercise-hours").value, 10) || 0;
+  const minutes = parseInt(document.getElementById("exercise-minutes").value, 10) || 0;
+  if(!type){ alert("運動の種目を選んでください"); return; }
+  if(!intensity){ alert("運動強度を選んでください"); return; }
+  if(hours<=0 && minutes<=0){ alert("運動時間を入力してください"); return; }
+  if(!state.exercises[today]) state.exercises[today] = [];
+  state.exercises[today].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity});
+  saveState();
+  clearSelected("exercise-type-grid");
+  clearSelected("exercise-intensity-grid");
+  document.getElementById("exercise-hours").value = "";
+  document.getElementById("exercise-minutes").value = "";
+  renderExercisePage();
+});
+
 // ---------- nav ----------
 function switchView(name){
   document.querySelectorAll("nav button").forEach(b=>{
@@ -1593,6 +1760,7 @@ function switchView(name){
   });
   if(name==="cal") renderCalendar();
   if(name==="record") renderRecordPage();
+  if(name==="exercise") renderExercisePage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
   b.addEventListener("click", ()=> switchView(b.dataset.view));
@@ -1605,6 +1773,7 @@ function renderAll(){
   renderCalendar();
   renderSettings();
   renderRecordPage();
+  renderExercisePage();
 }
 
 renderAll();
