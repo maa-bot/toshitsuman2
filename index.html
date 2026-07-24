@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>トウシツモン - 糖質管理たまご</title>
+<title>QOLクエスト</title>
 <style>
   :root{
     --bg:#0f1226;
@@ -383,6 +383,43 @@
   }
   .bar-inner{height:100%; transition:width .3s;}
 
+  /* ---- history charts ---- */
+  .chart-caption{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  .dist-bar{
+    display:flex;
+    height:16px;
+    border-radius:8px;
+    overflow:hidden;
+    background:var(--panel2);
+  }
+  .dist-legend{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .dist-legend span{display:flex; align-items:center; gap:5px;}
+  .dist-legend i{width:8px; height:8px; border-radius:50%; display:inline-block;}
+  .type-bar-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:12px;
+  }
+  .type-bar-row .type-label{width:88px; color:var(--muted); flex-shrink:0;}
+  .type-bar-row .type-track{flex:1; height:12px; background:var(--panel2); border-radius:6px; overflow:hidden;}
+  .type-bar-row .type-fill{height:100%; background:var(--accent);}
+  .type-bar-row .type-count{width:24px; text-align:right; flex-shrink:0;}
+
   /* ---- settings ---- */
   .setting-row{
     display:flex;
@@ -621,8 +658,8 @@
 <body>
 
 <header>
-  <h1>🥚 トウシツモン</h1>
-  <p>糖質・脂質のドカ食いを見張る、育成カレンダー</p>
+  <h1>⚔️ QOLクエスト</h1>
+  <p>食事・運動・睡眠・メンタル——毎日の記録でQOL(生活の質)を高める育成アドベンチャー</p>
   <div id="storage-warning" style="display:none; margin:10px auto 0; max-width:500px; background:rgba(255,95,109,.15); color:var(--bad); border-radius:10px; padding:8px 12px; font-size:12px;">
     この端末・ブラウザではデータを保存できません。記録が保持されない可能性があります。
   </div>
@@ -633,6 +670,7 @@
   <button data-view="record">記録</button>
   <button data-view="exercise">運動</button>
   <button data-view="lifelog">ライフログ</button>
+  <button data-view="history">履歴</button>
   <button data-view="cal">カレンダー</button>
   <button data-view="settings">設定</button>
 </nav>
@@ -865,6 +903,57 @@
       <div class="add-meal-box">
         <input type="text" id="challenge-note" placeholder="新しいこと・出会い(任意)" style="width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; margin-bottom:12px;">
         <button class="quick-log-btn" id="challenge-save">追加する</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY VIEW -->
+  <section class="view" id="view-history">
+    <div class="card">
+      <h2>履歴・グラフ (直近30日)</h2>
+      <p class="setting-note" style="margin-top:0;">記録、運動、ライフログの記録を振り返ります。</p>
+    </div>
+
+    <div class="card">
+      <h2>記録: 体重の推移</h2>
+      <div id="chart-weight"></div>
+    </div>
+
+    <div class="card">
+      <h2>記録: 食事判定の内訳</h2>
+      <div id="chart-meal-dist"></div>
+    </div>
+
+    <div class="card">
+      <h2>運動: 運動時間の推移(分/日)</h2>
+      <div id="chart-exercise-minutes"></div>
+    </div>
+
+    <div class="card">
+      <h2>運動: 種目別の記録数</h2>
+      <div id="chart-exercise-types"></div>
+    </div>
+
+    <div class="card">
+      <h2>運動: 歩数の推移</h2>
+      <div id="chart-steps"></div>
+    </div>
+
+    <div class="card">
+      <h2>ライフログ: 睡眠時間の推移</h2>
+      <div id="chart-sleep"></div>
+    </div>
+
+    <div class="card">
+      <h2>ライフログ: メンタルの内訳</h2>
+      <div id="chart-stress-dist"></div>
+    </div>
+
+    <div class="card">
+      <h2>ライフログ: 休憩・読書の合計時間</h2>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num" id="stat-rest-total">0</div><div class="label">休憩・瞑想(分)</div></div>
+        <div class="stat-box"><div class="num" id="stat-reading-total">0</div><div class="label">読書・学習(分)</div></div>
       </div>
     </div>
   </section>
@@ -2206,6 +2295,143 @@ document.getElementById("challenge-save").addEventListener("click", ()=>{
   renderCharacterView();
 });
 
+// ---------- history page ----------
+function lastNDates(n){
+  const dates = [];
+  const today = new Date();
+  for(let i=n-1;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    dates.push(fmtDate(d));
+  }
+  return dates;
+}
+
+function shortDate(dateStr){
+  const d = parseDateStr(dateStr);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function renderLineChartSVG(dates, values, color){
+  const w = 300, h = 90, pad = 10;
+  const points = dates.map((d,i)=>({i, v: values[i]})).filter(p=>p.v!=null && !isNaN(p.v));
+  if(points.length===0) return `<div class="empty-msg">まだデータがありません</div>`;
+  const vals = points.map(p=>p.v);
+  const max = Math.max(...vals), min = Math.min(...vals);
+  const range = (max-min) || 1;
+  const stepX = dates.length>1 ? (w-pad*2)/(dates.length-1) : 0;
+  const xy = points.map(p=>{
+    const x = pad + p.i*stepX;
+    const y = h-pad - ((p.v-min)/range)*(h-pad*2);
+    return {x,y};
+  });
+  const path = "M " + xy.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L ");
+  const dots = xy.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="${color}"/>`).join("");
+  return `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}
+    </svg>
+    <div class="chart-caption"><span>${shortDate(dates[0])}</span><span>最新: ${vals[vals.length-1]}</span><span>${shortDate(dates[dates.length-1])}</span></div>
+  `;
+}
+
+function renderBarChartSVG(dates, values, color){
+  const w = 300, h = 90;
+  const max = Math.max(1, ...values.filter(v=>v!=null));
+  if(max<=1 && values.every(v=>!v)) return `<div class="empty-msg">まだデータがありません</div>`;
+  const barW = w/dates.length;
+  const bars = values.map((v,i)=>{
+    const val = v||0;
+    const barH = (val/max)*(h-4);
+    return `<rect x="${(i*barW+1).toFixed(1)}" y="${(h-barH).toFixed(1)}" width="${Math.max(1,barW-2).toFixed(1)}" height="${barH.toFixed(1)}" rx="1.5" fill="${color}"/>`;
+  }).join("");
+  return `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${bars}</svg>
+    <div class="chart-caption"><span>${shortDate(dates[0])}</span><span>${shortDate(dates[dates.length-1])}</span></div>
+  `;
+}
+
+function renderDistBar(counts, segments){
+  const total = segments.reduce((s,seg)=> s+(counts[seg.key]||0), 0);
+  if(total===0) return `<div class="empty-msg">まだデータがありません</div>`;
+  const bars = segments.map(seg=>{
+    const v = counts[seg.key]||0;
+    if(v===0) return "";
+    return `<div style="flex:${v}; background:${seg.color};"></div>`;
+  }).join("");
+  const legend = segments.map(seg=>
+    `<span><i style="background:${seg.color};"></i>${seg.label} ${counts[seg.key]||0}</span>`
+  ).join("");
+  return `<div class="dist-bar">${bars}</div><div class="dist-legend">${legend}</div>`;
+}
+
+function renderTypeBars(counts){
+  const entries = Object.keys(counts).filter(k=>counts[k]>0).sort((a,b)=>counts[b]-counts[a]);
+  if(entries.length===0) return `<div class="empty-msg">まだデータがありません</div>`;
+  const max = Math.max(...entries.map(k=>counts[k]));
+  return entries.map(k=>{
+    const label = EXERCISE_TYPES[k] ? EXERCISE_TYPES[k].label : k;
+    const pct = (counts[k]/max)*100;
+    return `<div class="type-bar-row">
+      <span class="type-label">${label}</span>
+      <span class="type-track"><span class="type-fill" style="width:${pct}%;"></span></span>
+      <span class="type-count">${counts[k]}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderHistoryPage(){
+  const dates = lastNDates(30);
+
+  document.getElementById("chart-weight").innerHTML =
+    renderLineChartSVG(dates, dates.map(d=> state.weights[d] ?? null), "#7c8cff");
+
+  const mealCounts = {good:0, warn:0, bad:0};
+  dates.forEach(d=>{
+    const st = dayStatus(d);
+    if(st==="good"||st==="warn"||st==="bad") mealCounts[st]++;
+  });
+  document.getElementById("chart-meal-dist").innerHTML = renderDistBar(mealCounts, [
+    {key:"good", label:"達成", color:"#4fd67a"},
+    {key:"warn", label:"やや超過", color:"#ffc84f"},
+    {key:"bad", label:"ドカ食い", color:"#ff5f6d"},
+  ]);
+
+  const exerciseMinutes = dates.map(d=> (state.exercises[d]||[]).reduce((sum,e)=> sum+e.hours*60+e.minutes, 0));
+  document.getElementById("chart-exercise-minutes").innerHTML = renderBarChartSVG(dates, exerciseMinutes, "#7c8cff");
+
+  const typeCounts = {};
+  dates.forEach(d=>{
+    (state.exercises[d]||[]).forEach(e=>{ typeCounts[e.type] = (typeCounts[e.type]||0)+1; });
+  });
+  document.getElementById("chart-exercise-types").innerHTML = renderTypeBars(typeCounts);
+
+  document.getElementById("chart-steps").innerHTML =
+    renderBarChartSVG(dates, dates.map(d=> state.steps[d] ?? null), "#4fd67a");
+
+  document.getElementById("chart-sleep").innerHTML =
+    renderLineChartSVG(dates, dates.map(d=> state.sleep[d] ? state.sleep[d].hours : null), "#4f8ff7");
+
+  const stressCounts = {good:0, normal:0, hard:0};
+  dates.forEach(d=>{
+    const s = state.stress[d];
+    if(s) stressCounts[s.rating]++;
+  });
+  document.getElementById("chart-stress-dist").innerHTML = renderDistBar(stressCounts, [
+    {key:"good", label:"良好", color:"#4fd67a"},
+    {key:"normal", label:"普通", color:"#7c8cff"},
+    {key:"hard", label:"しんどい", color:"#ff5f6d"},
+  ]);
+
+  let restTotal = 0, readingTotal = 0;
+  dates.forEach(d=>{
+    restTotal += (state.rests[d]||[]).reduce((s,e)=>s+e.minutes,0);
+    readingTotal += (state.reading[d]||[]).reduce((s,e)=>s+e.minutes,0);
+  });
+  document.getElementById("stat-rest-total").textContent = restTotal;
+  document.getElementById("stat-reading-total").textContent = readingTotal;
+}
+
 // ---------- nav ----------
 function switchView(name){
   document.querySelectorAll("nav button").forEach(b=>{
@@ -2218,6 +2444,7 @@ function switchView(name){
   if(name==="record") renderRecordPage();
   if(name==="exercise") renderExercisePage();
   if(name==="lifelog") renderLifelogPage();
+  if(name==="history") renderHistoryPage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
   b.addEventListener("click", ()=> switchView(b.dataset.view));
@@ -2232,6 +2459,7 @@ function renderAll(){
   renderRecordPage();
   renderExercisePage();
   renderLifelogPage();
+  renderHistoryPage();
 }
 
 renderAll();
