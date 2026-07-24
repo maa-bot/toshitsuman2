@@ -634,6 +634,24 @@
     white-space:nowrap;
   }
   .saved-value.empty{color:var(--muted); font-weight:400;}
+
+  .stat-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    padding:2px 9px;
+    border-radius:999px;
+    background:rgba(124,140,255,.15);
+    color:var(--accent);
+    margin-left:8px;
+    vertical-align:middle;
+  }
+  .stat-tag-note{
+    font-size:11px;
+    color:var(--muted);
+    margin:2px 0 12px;
+    line-height:1.5;
+  }
   .checkbox-row{
     display:flex;
     align-items:center;
@@ -729,15 +747,12 @@
       </div>
 
       <div class="stat-grid">
-        <div class="stat-box"><div class="num" id="stat-str">0</div><div class="label">STR 力</div></div>
-        <div class="stat-box"><div class="num" id="stat-atk">0</div><div class="label">ATK 攻撃力</div></div>
-        <div class="stat-box"><div class="num" id="stat-vit">0</div><div class="label">VIT 生命力</div></div>
-        <div class="stat-box"><div class="num" id="stat-def">0</div><div class="label">DEF 防御力</div></div>
-        <div class="stat-box"><div class="num" id="stat-int">0</div><div class="label">INT 知力</div></div>
-        <div class="stat-box"><div class="num" id="stat-res">0</div><div class="label">RES 抵抗力</div></div>
-        <div class="stat-box"><div class="num" id="stat-dex">0</div><div class="label">DEX 器用さ</div></div>
-        <div class="stat-box"><div class="num" id="stat-agi">0</div><div class="label">AGI 素早さ</div></div>
-        <div class="stat-box"><div class="num" id="stat-luk">0</div><div class="label">LUK 運</div></div>
+        <div class="stat-box"><div class="num" id="stat-atk">0</div><div class="label">攻撃力</div></div>
+        <div class="stat-box"><div class="num" id="stat-def">0</div><div class="label">防御力</div></div>
+        <div class="stat-box"><div class="num" id="stat-mag">0</div><div class="label">魔力</div></div>
+        <div class="stat-box"><div class="num" id="stat-heal">0</div><div class="label">回復力</div></div>
+        <div class="stat-box"><div class="num" id="stat-spd">0</div><div class="label">素早さ</div></div>
+        <div class="stat-box"><div class="num" id="stat-luk">0</div><div class="label">運 (連続記録)</div></div>
       </div>
 
       <div class="stat-row">
@@ -764,8 +779,8 @@
       <h2>育成のしくみ</h2>
       <p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0;">
         食事・運動・睡眠・休憩瞑想・読書学習・メンタル・新しい挑戦——記録した行為そのものがEXPになり、Lvが上がる。<br>
-        HPは食事の質と睡眠で増減し、MPは休憩・瞑想と睡眠の質で回復する。<b style="color:var(--bad)">HPが尽きかけると</b>見た目も弱ってくるので要注意。<br>
-        STR/ATK/VIT/DEF/INT/RES/DEX/AGI/LUKは、対応する生活習慣を記録するたびにコツコツ育っていく。Lvが上がると装備も変化していく。
+        いずれ敵と戦うことを想定し、ステータスは6つに整理: <b>攻撃力</b>(歩数・運動・今日の挑戦) / <b>防御力</b>(食事・メンタル) / <b>魔力</b>(読書・学習) / <b>回復力</b>(睡眠・休憩瞑想) / <b>素早さ</b>(体重) / <b>運</b>(連続記録)。<br>
+        HPの最大値は回復力、MPの最大値は魔力から決まる。<b style="color:var(--bad)">「ドカ食い」の日はHPもMPも消費する</b>ので要注意。HPが尽きかけると見た目も弱ってくる。Lvが上がると装備も変化していく。
       </p>
     </div>
   </section>
@@ -782,7 +797,8 @@
     </div>
 
     <div class="card">
-      <h2>体重</h2>
+      <h2>体重<span class="stat-tag">ステータス: 素早さ</span></h2>
+      <p class="stat-tag-note">※目標体重に近づくほど素早さが上がる</p>
       <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
         <label for="record-weight-input">体重</label>
         <input type="number" step="0.1" min="1" id="record-weight-input" placeholder="未記録">
@@ -794,7 +810,8 @@
     </div>
 
     <div class="card">
-      <h2>食事</h2>
+      <h2>食事<span class="stat-tag">ステータス: 防御力</span></h2>
+      <p class="stat-tag-note">※食事の内容で防御力が変化する(ドカ食いはHP・MPを消費する)</p>
       <div id="record-meal-entries-list"></div>
       <div class="add-meal-box">
         <h4>食事を追加</h4>
@@ -833,7 +850,8 @@
     </div>
 
     <div class="card">
-      <h2>歩数</h2>
+      <h2>歩数<span class="stat-tag">ステータス: 攻撃力</span></h2>
+      <p class="stat-tag-note">※歩数が多いほど攻撃力が上がる</p>
       <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
         <label for="steps-input">歩数</label>
         <input type="number" step="1" min="0" id="steps-input" placeholder="未記録">
@@ -844,7 +862,8 @@
     </div>
 
     <div class="card">
-      <h2>運動の記録</h2>
+      <h2>運動の記録<span class="stat-tag">ステータス: 攻撃力</span></h2>
+      <p class="stat-tag-note">※運動の内容で攻撃力が上がる</p>
       <div id="exercise-entries-list"></div>
       <div class="add-meal-box">
         <h4>運動を追加</h4>
@@ -891,7 +910,8 @@
     </div>
 
     <div class="card">
-      <h2>睡眠</h2>
+      <h2>睡眠<span class="stat-tag">ステータス: 回復力</span></h2>
+      <p class="stat-tag-note">※睡眠の内容で回復力が変化する</p>
       <div class="duration-row">
         <input type="number" min="0" step="0.5" id="sleep-hours" placeholder="0"><span>時間</span>
         <span class="saved-value empty" id="sleep-hours-saved">未保存</span>
@@ -906,7 +926,8 @@
     </div>
 
     <div class="card">
-      <h2>休憩・瞑想</h2>
+      <h2>休憩・瞑想<span class="stat-tag">ステータス: 回復力</span></h2>
+      <p class="stat-tag-note">※休憩・瞑想で回復力が上がる</p>
       <div id="rest-entries-list"></div>
       <div class="add-meal-box">
         <div class="duration-row">
@@ -917,7 +938,8 @@
     </div>
 
     <div class="card">
-      <h2>読書・学習</h2>
+      <h2>読書・学習<span class="stat-tag">ステータス: 魔力</span></h2>
+      <p class="stat-tag-note">※読書・学習で魔力が上がる</p>
       <div id="reading-entries-list"></div>
       <div class="add-meal-box">
         <div class="duration-row">
@@ -928,7 +950,8 @@
     </div>
 
     <div class="card">
-      <h2>今日のメンタル</h2>
+      <h2>今日のメンタル<span class="stat-tag">ステータス: 防御力</span></h2>
+      <p class="stat-tag-note">※メンタルの状態で防御力が変化する</p>
       <div class="slot-grid" id="stress-grid">
         <button class="sel-btn slot-btn" data-rating="good">良好</button>
         <button class="sel-btn slot-btn" data-rating="normal">普通</button>
@@ -938,7 +961,8 @@
     </div>
 
     <div class="card">
-      <h2>今日の挑戦</h2>
+      <h2>今日の挑戦<span class="stat-tag">ステータス: 攻撃力</span></h2>
+      <p class="stat-tag-note">※新しい挑戦で攻撃力が上がる</p>
       <div id="challenge-entries-list"></div>
       <div class="add-meal-box">
         <input type="text" id="challenge-note" placeholder="新しいこと・出会い(任意)" style="width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; margin-bottom:12px;">
@@ -1381,43 +1405,70 @@ function countLoggedActions(cutoff){
 }
 
 function computePermanentStats(cutoff){
-  let str=0, atk=0, def=0, agi=0, dex=0, vit=0, intStat=0, res=0, luk=0;
+  let atk=0, def=0, mag=0, heal=0, spd=0;
 
+  // 攻撃力: 歩数・運動・今日の挑戦
   Object.keys(state.exercises).forEach(d=>{
     if(d>cutoff) return;
     state.exercises[d].forEach(e=>{
-      if(e.type==="strength") str += 3;
-      if(e.type==="stretch" || e.type==="yoga") def += 3;
-      if(e.type==="walking" || e.type==="jogging" || e.type==="running") atk += 2;
-      if(e.type==="race") atk += 6;
-      if(e.type==="jogging" || e.type==="running") agi += 2;
-      if(e.formPractice) dex += 3;
+      atk += 2;
+      if(e.type==="race") atk += 4;
+      if(e.formPractice) atk += 2;
     });
   });
   Object.keys(state.steps).forEach(d=>{
     if(d>cutoff) return;
-    if(state.steps[d]>=8000) agi += 1;
-  });
-  Object.keys(state.sleep).forEach(d=>{
-    if(d>cutoff) return;
-    const q = state.sleep[d].quality;
-    if(q==="good") vit += 2;
-    else if(q==="normal") vit += 1;
-  });
-  Object.keys(state.reading).forEach(d=>{
-    if(d>cutoff) return;
-    intStat += state.reading[d].length * 3;
-  });
-  Object.keys(state.stress).forEach(d=>{
-    if(d>cutoff) return;
-    res += state.stress[d].rating==="good" ? 3 : 1;
+    if(state.steps[d]>=8000) atk += 1;
   });
   Object.keys(state.challenges).forEach(d=>{
     if(d>cutoff) return;
-    luk += state.challenges[d].length * 4;
+    atk += state.challenges[d].length * 3;
   });
 
-  return {str, atk, def, agi, dex, vit, int:intStat, res, luk};
+  // 防御力: 食事・メンタル
+  allLoggedDatesSorted().forEach(d=>{
+    if(d>cutoff) return;
+    const st = dayStatus(d);
+    if(st==="good") def += 2;
+    else if(st==="warn") def += 1;
+  });
+  Object.keys(state.stress).forEach(d=>{
+    if(d>cutoff) return;
+    const r = state.stress[d].rating;
+    def += r==="good" ? 2 : (r==="normal" ? 1 : 0);
+  });
+
+  // 魔力: 読書・学習
+  Object.keys(state.reading).forEach(d=>{
+    if(d>cutoff) return;
+    mag += state.reading[d].length * 3;
+  });
+
+  // 回復力: 睡眠・休憩・瞑想
+  Object.keys(state.sleep).forEach(d=>{
+    if(d>cutoff) return;
+    const q = state.sleep[d].quality;
+    if(q==="good") heal += 2;
+    else if(q==="normal") heal += 1;
+  });
+  Object.keys(state.rests).forEach(d=>{
+    if(d>cutoff) return;
+    heal += state.rests[d].length * 2;
+  });
+
+  // 素早さ: 体重(記録+目標への近づき)
+  const weightDates = Object.keys(state.weights).filter(d=>d<=cutoff).sort();
+  const goal = state.profile.goalWeight;
+  weightDates.forEach((d,i)=>{
+    spd += 1;
+    if(i>0 && goal!=null && !isNaN(goal)){
+      const prev = state.weights[weightDates[i-1]];
+      const curr = state.weights[d];
+      if(Math.abs(curr-goal) < Math.abs(prev-goal)) spd += 2;
+    }
+  });
+
+  return {atk, def, mag, heal, spd};
 }
 
 function simulateHpMp(cutoff, maxHp, maxMp){
@@ -1434,6 +1485,7 @@ function simulateHpMp(cutoff, maxHp, maxMp){
     else if(st==="warn") hp -= 5;
     else if(st==="bad") hp -= 15;
     else hp -= 2;
+    if(st==="bad") mp -= 10; // ドカ食いでMPも消費
     const sleepEntry = state.sleep[ds];
     if(sleepEntry){
       if(sleepEntry.quality==="good") hp += 5;
@@ -1477,8 +1529,8 @@ function computeRPGState(cutoffDateStr){
   const expNext = expForLevel(level+1);
 
   const stats = computePermanentStats(cutoff);
-  const maxHp = 50 + stats.vit*3;
-  const maxMp = 30 + stats.res*2;
+  const maxHp = 50 + stats.heal*3;
+  const maxMp = 30 + stats.mag*2;
   const {hp, mp} = simulateHpMp(cutoff, maxHp, maxMp);
 
   const {streak, longestStreak, badgesEarned} = computeStreakAndBadges(cutoff);
@@ -1491,8 +1543,7 @@ function computeRPGState(cutoffDateStr){
   return {
     level, exp, expFloor, expNext, tier: levelTierFor(level),
     hp, maxHp, mp, maxMp, hpRatio, hpTier,
-    str:stats.str, atk:stats.atk, vit:stats.vit, def:stats.def,
-    int:stats.int, res:stats.res, dex:stats.dex, agi:stats.agi, luk:stats.luk,
+    atk:stats.atk, def:stats.def, mag:stats.mag, heal:stats.heal, spd:stats.spd, luk:streak,
     streak, longestStreak, badgesEarned,
   };
 }
@@ -1695,7 +1746,7 @@ function renderCharacterView(){
   document.getElementById("mp-bar").style.width = (mpRatio*100) + "%";
   document.getElementById("mp-label").textContent = `MP ${rpg.mp} / ${rpg.maxMp}`;
 
-  const statIds = {str:"stat-str", atk:"stat-atk", vit:"stat-vit", def:"stat-def", int:"stat-int", res:"stat-res", dex:"stat-dex", agi:"stat-agi", luk:"stat-luk"};
+  const statIds = {atk:"stat-atk", def:"stat-def", mag:"stat-mag", heal:"stat-heal", spd:"stat-spd", luk:"stat-luk"};
   Object.keys(statIds).forEach(k=>{ document.getElementById(statIds[k]).textContent = rpg[k]; });
 
   document.getElementById("stat-streak").textContent = rpg.streak;
