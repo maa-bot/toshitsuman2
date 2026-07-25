@@ -652,16 +652,6 @@
     margin:2px 0 12px;
     line-height:1.5;
   }
-  .checkbox-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    color:var(--text);
-    margin-bottom:14px;
-    cursor:pointer;
-  }
-  .checkbox-row input{width:18px; height:18px;}
   .level-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -892,8 +882,6 @@
           <button class="sel-btn level-btn lv-normal" data-intensity="mid"><span class="emoji">🟡</span>中</button>
           <button class="sel-btn level-btn lv-light" data-intensity="low"><span class="emoji">🟢</span>低</button>
         </div>
-
-        <label class="checkbox-row"><input type="checkbox" id="exercise-form-practice"> フォーム練習に取り組んだ</label>
 
         <button class="quick-log-btn" id="exercise-save">保存する</button>
       </div>
@@ -1461,7 +1449,6 @@ function atkDailyScore(ds){
   (state.exercises[ds]||[]).forEach(e=>{
     score += 1;
     if(e.type==="race") score += 1;
-    if(e.formPractice) score += 1;
   });
   score += (state.challenges[ds]||[]).length;
   return score;
@@ -2347,18 +2334,16 @@ document.getElementById("exercise-save").addEventListener("click", ()=>{
   const intensity = getSelectedValue("exercise-intensity-grid", "intensity");
   const hours = parseInt(document.getElementById("exercise-hours").value, 10) || 0;
   const minutes = parseInt(document.getElementById("exercise-minutes").value, 10) || 0;
-  const formPractice = document.getElementById("exercise-form-practice").checked;
   if(!type){ alert("運動の種目を選んでください"); return; }
   if(!intensity){ alert("運動強度を選んでください"); return; }
   if(hours<=0 && minutes<=0){ alert("運動時間を入力してください"); return; }
   if(!state.exercises[exerciseSelectedDate]) state.exercises[exerciseSelectedDate] = [];
-  state.exercises[exerciseSelectedDate].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity, formPractice});
+  state.exercises[exerciseSelectedDate].push({id:"e"+Date.now()+Math.random().toString(36).slice(2,6), type, hours, minutes, intensity});
   saveState();
   clearSelected("exercise-type-grid");
   clearSelected("exercise-intensity-grid");
   document.getElementById("exercise-hours").value = "";
   document.getElementById("exercise-minutes").value = "";
-  document.getElementById("exercise-form-practice").checked = false;
   renderExercisePage();
   renderCharacterView();
 });
