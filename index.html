@@ -780,6 +780,7 @@
       <p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0;">
         食事・運動・睡眠・休憩瞑想・読書学習・メンタル・新しい挑戦——記録した行為そのものがEXPになり、Lvが上がる。<br>
         いずれ敵と戦うことを想定し、ステータスは6つに整理: <b>攻撃力</b>(歩数・運動・今日の挑戦) / <b>防御力</b>(食事・メンタル) / <b>魔力</b>(読書・学習) / <b>回復力</b>(睡眠・休憩瞑想) / <b>素早さ</b>(体重) / <b>運</b>(連続記録)。<br>
+        ステータスが高くなるほど次の+1に必要な達成日数が増えていく(20〜39は2日、40〜59は3日…90以上は7日)。<b style="color:var(--bad)">3日連続で達成できないと-1、睡眠の質が悪い日もその場で回復力が-1</b>になるので、コツコツ続けることが大事。<br>
         HPの最大値は回復力、MPの最大値は魔力から決まる。<b style="color:var(--bad)">「ドカ食い」の日はHPもMPも消費する</b>ので要注意。HPが尽きかけると見た目も弱ってくる。Lvが上がると装備も変化していく。
       </p>
     </div>
@@ -911,7 +912,7 @@
 
     <div class="card">
       <h2>睡眠<span class="stat-tag">ステータス: 回復力</span></h2>
-      <p class="stat-tag-note">※睡眠の内容で回復力が変化する</p>
+      <p class="stat-tag-note">※睡眠の内容で回復力が変化する(質が悪いとその場で-1)</p>
       <div class="duration-row">
         <input type="number" min="0" step="0.5" id="sleep-hours" placeholder="0"><span>時間</span>
         <span class="saved-value empty" id="sleep-hours-saved">未保存</span>
@@ -1404,71 +1405,124 @@ function countLoggedActions(cutoff){
   return n;
 }
 
-function computePermanentStats(cutoff){
-  let atk=0, def=0, mag=0, heal=0, spd=0;
+// ステータスが上がるほど、次の+1に必要な「達成日数」が増えていく
+const STAT_TIER_DAYS = [
+  {min:0,  max:19, days:1},
+  {min:20, max:39, days:2},
+  {min:40, max:59, days:3},
+  {min:60, max:79, days:4},
+  {min:80, max:89, days:5},
+  {min:90, max:Infinity, days:7},
+];
+function daysNeededForTier(value){
+  const t = STAT_TIER_DAYS.find(t=> value>=t.min && value<=t.max) || STAT_TIER_DAYS[STAT_TIER_DAYS.length-1];
+  return t.days;
+}
 
-  // 攻撃力: 歩数・運動・今日の挑戦
-  Object.keys(state.exercises).forEach(d=>{
-    if(d>cutoff) return;
-    state.exercises[d].forEach(e=>{
-      atk += 2;
-      if(e.type==="race") atk += 4;
-      if(e.formPractice) atk += 2;
-    });
-  });
-  Object.keys(state.steps).forEach(d=>{
-    if(d>cutoff) return;
-    if(state.steps[d]>=8000) atk += 1;
-  });
-  Object.keys(state.challenges).forEach(d=>{
-    if(d>cutoff) return;
-    atk += state.challenges[d].length * 3;
-  });
-
-  // 防御力: 食事・メンタル
-  allLoggedDatesSorted().forEach(d=>{
-    if(d>cutoff) return;
-    const st = dayStatus(d);
-    if(st==="good") def += 2;
-    else if(st==="warn") def += 1;
-  });
-  Object.keys(state.stress).forEach(d=>{
-    if(d>cutoff) return;
-    const r = state.stress[d].rating;
-    def += r==="good" ? 2 : (r==="normal" ? 1 : 0);
-  });
-
-  // 魔力: 読書・学習
-  Object.keys(state.reading).forEach(d=>{
-    if(d>cutoff) return;
-    mag += state.reading[d].length * 3;
-  });
-
-  // 回復力: 睡眠・休憩・瞑想
-  Object.keys(state.sleep).forEach(d=>{
-    if(d>cutoff) return;
-    const q = state.sleep[d].quality;
-    if(q==="good") heal += 2;
-    else if(q==="normal") heal += 1;
-  });
-  Object.keys(state.rests).forEach(d=>{
-    if(d>cutoff) return;
-    heal += state.rests[d].length * 2;
-  });
-
-  // 素早さ: 体重(記録+目標への近づき)
-  const weightDates = Object.keys(state.weights).filter(d=>d<=cutoff).sort();
-  const goal = state.profile.goalWeight;
-  weightDates.forEach((d,i)=>{
-    spd += 1;
-    if(i>0 && goal!=null && !isNaN(goal)){
-      const prev = state.weights[weightDates[i-1]];
-      const curr = state.weights[d];
-      if(Math.abs(curr-goal) < Math.abs(prev-goal)) spd += 2;
+// 日ごとのスコアを積み上げ、必要日数に達すると+1。3日連続で未達成だと-1(3日坊主ペナルティ)。
+// スコアが負の日(睡眠の質が悪いなど)はその場で-1。
+function simulateStat(cutoff, dailyScoreFn){
+  const dates = allActivityDatesSorted(cutoff);
+  if(dates.length===0) return 0;
+  let value = 0, banked = 0, neglectStreak = 0;
+  const d = parseDateStr(dates[0]);
+  const end = parseDateStr(cutoff);
+  while(d<=end){
+    const ds = fmtDate(d);
+    const score = dailyScoreFn(ds);
+    if(score>0){
+      banked += score;
+      neglectStreak = 0;
+      while(true){
+        const need = daysNeededForTier(value);
+        if(banked>=need){ banked -= need; value += 1; } else break;
+      }
+    }else{
+      if(score<0) value = Math.max(0, value-1);
+      neglectStreak += 1;
+      if(neglectStreak>=3){
+        value = Math.max(0, value-1);
+        neglectStreak = 0;
+      }
     }
-  });
+    d.setDate(d.getDate()+1);
+  }
+  return Math.max(0, value);
+}
 
-  return {atk, def, mag, heal, spd};
+// 攻撃力: 歩数・運動・今日の挑戦
+function atkDailyScore(ds){
+  let score = 0;
+  const steps = state.steps[ds];
+  if(steps!=null){
+    if(steps>=16000) score += 2;
+    else if(steps>=8000) score += 1;
+  }
+  (state.exercises[ds]||[]).forEach(e=>{
+    score += 1;
+    if(e.type==="race") score += 1;
+    if(e.formPractice) score += 1;
+  });
+  score += (state.challenges[ds]||[]).length;
+  return score;
+}
+
+// 防御力: 食事(達成日)・メンタル
+function defDailyScore(ds){
+  let score = 0;
+  if(dayStatus(ds)==="good") score += 1;
+  const stressEntry = state.stress[ds];
+  if(stressEntry && (stressEntry.rating==="good" || stressEntry.rating==="normal")) score += 1;
+  return score;
+}
+
+// 魔力: 読書・学習
+function magDailyScore(ds){
+  return (state.reading[ds]||[]).length;
+}
+
+// 回復力: 睡眠の質・休憩瞑想(睡眠の質が悪い日はマイナス)
+function healDailyScore(ds){
+  let score = 0;
+  const sleepEntry = state.sleep[ds];
+  if(sleepEntry){
+    if(sleepEntry.quality==="good") score += 2;
+    else if(sleepEntry.quality==="normal") score += 1;
+    else if(sleepEntry.quality==="poor") score -= 1;
+  }
+  score += (state.rests[ds]||[]).length;
+  return score;
+}
+
+// 素早さ: 体重記録(前回記録より軽ければ+1、目標体重到達で+2ボーナス、増加幅に応じて減点)
+function makeSpdDailyScore(){
+  let lastWeight = null;
+  return function(ds){
+    const w = state.weights[ds];
+    if(w==null) return 0;
+    let score = 0;
+    if(lastWeight!=null){
+      const diff = w - lastWeight;
+      if(diff<0) score += 1;
+      else if(diff>=0.5 && diff<0.9) score += 0;
+      else if(diff>=1 && diff<2) score -= 1;
+      else if(diff>=2) score -= 2;
+    }
+    const goal = state.profile.goalWeight;
+    if(goal!=null && !isNaN(goal) && Math.abs(w-goal)<0.05) score += 2;
+    lastWeight = w;
+    return score;
+  };
+}
+
+function computePermanentStats(cutoff){
+  return {
+    atk: simulateStat(cutoff, atkDailyScore),
+    def: simulateStat(cutoff, defDailyScore),
+    mag: simulateStat(cutoff, magDailyScore),
+    heal: simulateStat(cutoff, healDailyScore),
+    spd: simulateStat(cutoff, makeSpdDailyScore()),
+  };
 }
 
 function simulateHpMp(cutoff, maxHp, maxMp){
