@@ -670,6 +670,7 @@
     line-height:1.6;
   }
   .level-btn .emoji{font-size:22px; display:block;}
+  .level-btn:disabled, .quick-log-btn:disabled{opacity:0.4; cursor:not-allowed;}
   .level-btn.lv-over{border-color:rgba(255,95,109,.5);}
   .level-btn.lv-over:active, .level-btn.lv-over:hover{background:rgba(255,95,109,.15);}
   .level-btn.lv-normal{border-color:rgba(124,140,255,.5);}
@@ -702,6 +703,7 @@
   <button data-view="char" class="active">キャラクター</button>
   <button data-view="exercise">運動</button>
   <button data-view="lifelog">ライフログ</button>
+  <button data-view="battle">バトル</button>
   <button data-view="history">履歴</button>
   <button data-view="cal">カレンダー</button>
   <button data-view="settings">設定</button>
@@ -945,6 +947,42 @@
         <input type="text" id="challenge-note" placeholder="新しいこと・出会い(任意)" style="width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; margin-bottom:12px;">
         <button class="quick-log-btn" id="challenge-save">追加する</button>
       </div>
+    </div>
+  </section>
+
+  <!-- BATTLE VIEW -->
+  <section class="view" id="view-battle">
+    <div class="card">
+      <h2>バトル</h2>
+      <p class="setting-note" style="margin-top:0;">1日に1体、日常生活を邪魔するモンスターが現れる。ジャンケンで勝負しよう。勝つと攻撃、あいこは何もなし、負けるとHP・MPが減る。MPで魔法シールドを構えると次の負けを1回だけ無効化できる。</p>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <div class="char-stage" id="enemy-level-label"></div>
+      <div class="char-name" id="enemy-name-label"></div>
+      <div id="enemy-desc-label" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
+      <div class="char-svg-box" id="enemy-svg-box" style="width:160px;height:160px;margin:0 auto;"></div>
+      <div class="expbar-outer hp-bar-outer"><div class="expbar-inner hp-bar-inner" id="enemy-hp-bar"></div></div>
+      <div class="expbar-label" id="enemy-hp-label"></div>
+    </div>
+
+    <div class="card">
+      <h2>あなたの状態</h2>
+      <div class="expbar-outer hp-bar-outer"><div class="expbar-inner hp-bar-inner" id="battle-hp-bar"></div></div>
+      <div class="expbar-label" id="battle-hp-label"></div>
+      <div class="expbar-outer mp-bar-outer" style="margin-top:10px;"><div class="expbar-inner mp-bar-inner" id="battle-mp-bar"></div></div>
+      <div class="expbar-label" id="battle-mp-label"></div>
+    </div>
+
+    <div class="card">
+      <div class="day-status-banner" id="battle-result-banner" style="display:none;"></div>
+      <div class="level-grid" id="battle-hand-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <button class="level-btn lv-normal" data-hand="rock"><span class="emoji">✊</span>グー</button>
+        <button class="level-btn lv-light" data-hand="scissors"><span class="emoji">✌️</span>チョキ</button>
+        <button class="level-btn lv-fast" data-hand="paper"><span class="emoji">✋</span>パー</button>
+      </div>
+      <button class="quick-log-btn" id="battle-shield-toggle" style="background:var(--panel2); color:var(--accent); border:2px solid var(--accent);">🛡️ 魔法シールドを構える (MP10)</button>
+      <div id="battle-log-list" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -1206,6 +1244,7 @@ function defaultState(){
     reading: {},
     stress: {},
     challenges: {},
+    battles: {},
     settings: Object.assign({}, DEFAULT_SETTINGS),
     profile: Object.assign({}, DEFAULT_PROFILE),
   };
@@ -1226,6 +1265,7 @@ function loadState(){
       reading: parsed.reading || {},
       stress: parsed.stress || {},
       challenges: parsed.challenges || {},
+      battles: parsed.battles || {},
       settings: Object.assign({}, DEFAULT_SETTINGS, parsed.settings||{}),
       profile: Object.assign({}, DEFAULT_PROFILE, parsed.profile||{}),
     });
@@ -1378,6 +1418,7 @@ function countLoggedActions(cutoff){
   Object.keys(state.reading).forEach(d=>{ if(d<=cutoff) n += state.reading[d].length; });
   Object.keys(state.stress).forEach(d=>{ if(d<=cutoff) n += 1; });
   Object.keys(state.challenges).forEach(d=>{ if(d<=cutoff) n += state.challenges[d].length; });
+  Object.keys(state.battles).forEach(d=>{ if(d<=cutoff && state.battles[d].defeated) n += 3; });
   return n;
 }
 
@@ -2439,6 +2480,164 @@ document.getElementById("challenge-save").addEventListener("click", ()=>{
   renderCharacterView();
 });
 
+// ---------- battle ----------
+const ENEMIES = [
+  {level:1,  key:"suima",       name:"スイマ",       desc:"睡魔",         color:"#8b7bd8", color2:"#5c4fa0"},
+  {level:2,  key:"daruza",      name:"ダルーザ",     desc:"だるさ",       color:"#8a9a6b", color2:"#5f6b48"},
+  {level:3,  key:"saborinu",    name:"サボリーヌ",   desc:"サボり心",     color:"#c9a45c", color2:"#96793a"},
+  {level:4,  key:"katakorin",   name:"カタコリン",   desc:"肩こり",       color:"#7a95b8", color2:"#52708f"},
+  {level:5,  key:"kinnikutsu",  name:"キンニクツー", desc:"筋肉痛",       color:"#d97a4f", color2:"#a8532e"},
+  {level:6,  key:"yuwakun",     name:"ユウワクン",   desc:"誘惑",         color:"#d966a8", color2:"#a3437d"},
+  {level:7,  key:"henzutsu",    name:"ヘンズツー",   desc:"偏頭痛",       color:"#9a5cc9", color2:"#6d3a96"},
+  {level:8,  key:"sutoressa",   name:"ストレッサー", desc:"ストレス",     color:"#c94f4f", color2:"#963333"},
+  {level:9,  key:"futsukayoi",  name:"フツカヨイ",   desc:"二日酔い",     color:"#7fae5c", color2:"#557d3a"},
+  {level:10, key:"genkain",     name:"ゲンカイン",   desc:"限界(燃え尽き)", color:"#4a4a5a", color2:"#2a2a36"},
+];
+const HAND_LABEL = {rock:"✊グー", scissors:"✌️チョキ", paper:"✋パー"};
+
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function enemyForDate(dateStr, playerLevel){
+  const maxLv = Math.max(1, Math.min(10, playerLevel));
+  const lv = 1 + (hashStr(dateStr) % maxLv);
+  return ENEMIES.find(e=>e.level===lv) || ENEMIES[0];
+}
+
+function getOrCreateBattle(dateStr){
+  if(!state.battles[dateStr]){
+    const rpg = computeRPGState();
+    const enemy = enemyForDate(dateStr, rpg.level);
+    state.battles[dateStr] = {
+      enemyKey: enemy.key,
+      enemyHp: enemy.level*12,
+      enemyMaxHp: enemy.level*12,
+      hp: rpg.hp,
+      maxHp: rpg.maxHp,
+      mp: rpg.mp,
+      maxMp: rpg.maxMp,
+      shieldArmed: false,
+      defeated: false,
+      log: [],
+    };
+    saveState();
+  }
+  return state.battles[dateStr];
+}
+
+function handBeats(a, b){
+  return (a==="rock"&&b==="scissors") || (a==="scissors"&&b==="paper") || (a==="paper"&&b==="rock");
+}
+
+function renderSlimeSVG(enemy){
+  return `<svg viewBox="0 0 160 160" width="100%" height="100%">
+    <path d="M 80 20 C 40 20 20 70 20 100 C 20 130 45 145 80 145 C 115 145 140 130 140 100 C 140 70 120 20 80 20 Z" fill="${enemy.color}" stroke="${enemy.color2}" stroke-width="3"/>
+    <ellipse cx="55" cy="60" rx="12" ry="8" fill="#ffffff" opacity="0.3"/>
+    <circle cx="62" cy="95" r="6" fill="#1a1a1a"/>
+    <circle cx="98" cy="95" r="6" fill="#1a1a1a"/>
+    <path d="M 65 115 Q 80 122 95 115" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+document.getElementById("battle-shield-toggle").addEventListener("click", ()=>{
+  const battle = getOrCreateBattle(todayStr());
+  if(battle.defeated) return;
+  if(!battle.shieldArmed && battle.mp<10){ alert("MPが足りません"); return; }
+  battle.shieldArmed = !battle.shieldArmed;
+  saveState();
+  renderBattlePage();
+});
+
+document.querySelectorAll("#battle-hand-grid .level-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=> playHand(btn.dataset.hand));
+});
+
+function playHand(hand){
+  const battle = getOrCreateBattle(todayStr());
+  if(battle.defeated) return;
+  const enemy = ENEMIES.find(e=>e.key===battle.enemyKey);
+  const enemyHand = ["rock","scissors","paper"][Math.floor(Math.random()*3)];
+  let resultText;
+  if(hand===enemyHand){
+    resultText = "あいこ";
+  }else if(handBeats(hand, enemyHand)){
+    const rpg = computeRPGState();
+    const dmg = 10 + Math.floor(rpg.atk/4);
+    battle.enemyHp = Math.max(0, battle.enemyHp - dmg);
+    resultText = `勝利！${enemy.name}に${dmg}ダメージ`;
+    if(battle.enemyHp<=0){
+      battle.defeated = true;
+      resultText += ` ― ${enemy.name}を撃破！(+15 EXP)`;
+    }
+  }else{
+    if(battle.shieldArmed && battle.mp>=10){
+      battle.mp -= 10;
+      battle.shieldArmed = false;
+      resultText = "魔法シールドで防御した！ダメージ無効";
+    }else{
+      battle.hp = Math.max(0, battle.hp-8);
+      battle.mp = Math.max(0, battle.mp-5);
+      battle.shieldArmed = false;
+      resultText = "敗北…HPとMPが減った";
+    }
+  }
+  battle.log.unshift({hand, enemyHand, resultText});
+  battle.log = battle.log.slice(0,6);
+  saveState();
+  renderBattlePage();
+  if(battle.defeated){ renderCharacterView(); renderCalendar(); }
+}
+
+function renderBattlePage(){
+  const battle = getOrCreateBattle(todayStr());
+  const enemy = ENEMIES.find(e=>e.key===battle.enemyKey);
+
+  document.getElementById("enemy-level-label").textContent = `Lv.${enemy.level}`;
+  document.getElementById("enemy-name-label").textContent = enemy.name;
+  document.getElementById("enemy-desc-label").textContent = `(${enemy.desc})`;
+  document.getElementById("enemy-svg-box").innerHTML = renderSlimeSVG(enemy);
+  const enemyHpRatio = battle.enemyMaxHp>0 ? battle.enemyHp/battle.enemyMaxHp : 0;
+  document.getElementById("enemy-hp-bar").style.width = (enemyHpRatio*100)+"%";
+  document.getElementById("enemy-hp-label").textContent = `HP ${battle.enemyHp} / ${battle.enemyMaxHp}`;
+
+  const hpRatio = battle.maxHp>0 ? battle.hp/battle.maxHp : 0;
+  document.getElementById("battle-hp-bar").style.width = (hpRatio*100)+"%";
+  document.getElementById("battle-hp-label").textContent = `HP ${battle.hp} / ${battle.maxHp}`;
+  const mpRatio = battle.maxMp>0 ? battle.mp/battle.maxMp : 0;
+  document.getElementById("battle-mp-bar").style.width = (mpRatio*100)+"%";
+  document.getElementById("battle-mp-label").textContent = `MP ${battle.mp} / ${battle.maxMp}`;
+
+  const shieldBtn = document.getElementById("battle-shield-toggle");
+  shieldBtn.textContent = battle.shieldArmed ? "🛡️ シールド発動中(次の負けを無効化)" : "🛡️ 魔法シールドを構える (MP10)";
+  shieldBtn.disabled = battle.defeated;
+  shieldBtn.style.opacity = (battle.defeated || (battle.mp<10 && !battle.shieldArmed)) ? "0.5" : "1";
+
+  document.querySelectorAll("#battle-hand-grid .level-btn").forEach(b=>{ b.disabled = battle.defeated; });
+
+  const banner = document.getElementById("battle-result-banner");
+  if(battle.defeated){
+    banner.style.display = "block";
+    banner.textContent = `${enemy.name}を撃破した！`;
+    banner.className = "day-status-banner banner-good";
+  }else{
+    banner.style.display = "none";
+  }
+
+  const logBox = document.getElementById("battle-log-list");
+  logBox.innerHTML = battle.log.length===0 ? `<div class="empty-msg">まだ戦っていません</div>` :
+    battle.log.map(l=>`
+      <div class="meal-entry">
+        <div class="meal-entry-top">
+          <span class="slot-time">${HAND_LABEL[l.hand]} vs ${HAND_LABEL[l.enemyHand]}</span>
+        </div>
+        <span class="level-chip chip-normal">${l.resultText}</span>
+      </div>
+    `).join("");
+}
+
 // ---------- history page ----------
 function lastNDates(n){
   const dates = [];
@@ -2587,6 +2786,7 @@ function switchView(name){
   if(name==="cal") renderCalendar();
   if(name==="exercise"){ exerciseSelectedDate = todayStr(); renderExercisePage(); }
   if(name==="lifelog"){ lifelogSelectedDate = todayStr(); renderLifelogPage(); }
+  if(name==="battle") renderBattlePage();
   if(name==="history") renderHistoryPage();
 }
 document.querySelectorAll("nav button").forEach(b=>{
@@ -2601,6 +2801,7 @@ function renderAll(){
   renderSettings();
   renderExercisePage();
   renderLifelogPage();
+  renderBattlePage();
   renderHistoryPage();
 }
 
