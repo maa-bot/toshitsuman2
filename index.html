@@ -700,7 +700,6 @@
 
 <nav>
   <button data-view="char" class="active">キャラクター</button>
-  <button data-view="record">記録</button>
   <button data-view="exercise">運動</button>
   <button data-view="lifelog">ライフログ</button>
   <button data-view="history">履歴</button>
@@ -776,60 +775,6 @@
     </div>
   </section>
 
-  <!-- RECORD VIEW -->
-  <section class="view" id="view-record">
-    <div class="card">
-      <h2>記録</h2>
-      <div class="date-select-row">
-        <label for="record-date-select">対象日</label>
-        <select id="record-date-select"></select>
-      </div>
-      <div class="day-status-banner" id="record-status-banner"></div>
-    </div>
-
-    <div class="card">
-      <h2>体重<span class="stat-tag">ステータス: 素早さ</span></h2>
-      <p class="stat-tag-note">※目標体重に近づくほど素早さが上がる</p>
-      <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
-        <label for="record-weight-input">体重</label>
-        <input type="number" step="0.1" min="1" id="record-weight-input" placeholder="未記録">
-        <span class="unit">kg</span>
-        <span class="saved-value empty" id="record-weight-saved">未保存</span>
-      </div>
-      <div class="setting-note" id="record-weight-note"></div>
-      <button class="quick-log-btn" id="record-weight-save">保存する</button>
-    </div>
-
-    <div class="card">
-      <h2>食事<span class="stat-tag">ステータス: 防御力</span></h2>
-      <p class="stat-tag-note">※食事の内容で防御力が変化する(ドカ食いはHP・MPを消費する)</p>
-      <div id="record-meal-entries-list"></div>
-      <div class="add-meal-box">
-        <h4>食事を追加</h4>
-        <p class="sub-label">いつの食事ですか?</p>
-        <div class="slot-grid" id="record-slot-grid">
-          <button class="sel-btn slot-btn" data-slot="breakfast">朝食</button>
-          <button class="sel-btn slot-btn" data-slot="lunch">昼食</button>
-          <button class="sel-btn slot-btn" data-slot="dinner">夕食</button>
-          <button class="sel-btn slot-btn" data-slot="late">夜食</button>
-          <button class="sel-btn slot-btn" data-slot="snack">間食</button>
-        </div>
-        <div class="time-row">
-          <label for="record-meal-time">時間</label>
-          <input type="time" id="record-meal-time">
-        </div>
-        <p class="sub-label">内容はどうでしたか?</p>
-        <div class="level-grid" id="record-level-grid">
-          <button class="sel-btn level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
-          <button class="sel-btn level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
-          <button class="sel-btn level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
-          <button class="sel-btn level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
-        </div>
-        <button class="quick-log-btn" id="record-meal-save">保存する</button>
-      </div>
-    </div>
-  </section>
-
   <!-- EXERCISE VIEW -->
   <section class="view" id="view-exercise">
     <div class="card">
@@ -895,6 +840,49 @@
       <div class="date-select-row">
         <label for="lifelog-date-select">対象日</label>
         <select id="lifelog-date-select"></select>
+      </div>
+      <div class="day-status-banner" id="record-status-banner"></div>
+    </div>
+
+    <div class="card">
+      <h2>体重<span class="stat-tag">ステータス: 素早さ</span></h2>
+      <p class="stat-tag-note">※目標体重に近づくほど素早さが上がる</p>
+      <div class="weight-row" style="flex-wrap:wrap; border-bottom:none; padding-bottom:0; margin-bottom:0;">
+        <label for="record-weight-input">体重</label>
+        <input type="number" step="0.1" min="1" id="record-weight-input" placeholder="未記録">
+        <span class="unit">kg</span>
+        <span class="saved-value empty" id="record-weight-saved">未保存</span>
+      </div>
+      <div class="setting-note" id="record-weight-note"></div>
+      <button class="quick-log-btn" id="record-weight-save">保存する</button>
+    </div>
+
+    <div class="card">
+      <h2>食事<span class="stat-tag">ステータス: 防御力</span></h2>
+      <p class="stat-tag-note">※食事の内容で防御力が変化する(ドカ食いはHP・MPを消費する)</p>
+      <div id="record-meal-entries-list"></div>
+      <div class="add-meal-box">
+        <h4>食事を追加</h4>
+        <p class="sub-label">いつの食事ですか?</p>
+        <div class="slot-grid" id="record-slot-grid">
+          <button class="sel-btn slot-btn" data-slot="breakfast">朝食</button>
+          <button class="sel-btn slot-btn" data-slot="lunch">昼食</button>
+          <button class="sel-btn slot-btn" data-slot="dinner">夕食</button>
+          <button class="sel-btn slot-btn" data-slot="late">夜食</button>
+          <button class="sel-btn slot-btn" data-slot="snack">間食</button>
+        </div>
+        <div class="time-row">
+          <label for="record-meal-time">時間</label>
+          <input type="time" id="record-meal-time">
+        </div>
+        <p class="sub-label">内容はどうでしたか?</p>
+        <div class="level-grid" id="record-level-grid">
+          <button class="sel-btn level-btn lv-over" data-level="over"><span class="emoji">🍔</span>食べ過ぎ</button>
+          <button class="sel-btn level-btn lv-normal" data-level="normal"><span class="emoji">🍚</span>普通</button>
+          <button class="sel-btn level-btn lv-light" data-level="light"><span class="emoji">🥗</span>軽め</button>
+          <button class="sel-btn level-btn lv-fast" data-level="fast"><span class="emoji">💧</span>絶食</button>
+        </div>
+        <button class="quick-log-btn" id="record-meal-save">保存する</button>
       </div>
     </div>
 
@@ -2173,9 +2161,7 @@ document.getElementById("modal-meal-save").addEventListener("click", ()=>{
   renderCharacterView();
 });
 
-// ---------- record page (today only) ----------
-let recordSelectedDate = todayStr();
-
+// ---------- shared date-select helpers ----------
 function dateOptionLabel(dateStr){
   const d = parseDateStr(dateStr);
   const wd = ["日","月","火","水","木","金","土"][d.getDay()];
@@ -2202,26 +2188,9 @@ function setSavedValueDisplay(elId, value, formatFn){
   }
 }
 
-function renderRecordPage(){
-  populateDateSelect("record-date-select", recordSelectedDate);
-  const w = state.weights[recordSelectedDate] ?? null;
-  document.getElementById("record-weight-input").value = w ?? "";
-  setSavedValueDisplay("record-weight-saved", w, v=>`${v}kg`);
-  document.getElementById("record-meal-time").value = nowTimeStr();
-
-  renderRecordWeightNote();
-  renderMealEntriesInto(recordSelectedDate, "record-meal-entries-list", renderRecordPage);
-  updateStatusBanner(recordSelectedDate, "record-status-banner");
-}
-
-document.getElementById("record-date-select").addEventListener("change", (e)=>{
-  recordSelectedDate = e.target.value;
-  renderRecordPage();
-});
-
 function renderRecordWeightNote(){
   const note = document.getElementById("record-weight-note");
-  const w = state.weights[recordSelectedDate];
+  const w = state.weights[lifelogSelectedDate];
   const goal = state.profile.goalWeight;
   if(w==null || goal==null || isNaN(goal)){
     note.textContent = "";
@@ -2236,12 +2205,12 @@ function renderRecordWeightNote(){
 document.getElementById("record-weight-save").addEventListener("click", ()=>{
   const v = parseFloat(document.getElementById("record-weight-input").value);
   if(isNaN(v) || v<=0){
-    delete state.weights[recordSelectedDate];
+    delete state.weights[lifelogSelectedDate];
   }else{
-    state.weights[recordSelectedDate] = v;
+    state.weights[lifelogSelectedDate] = v;
   }
   saveState();
-  renderRecordPage();
+  renderLifelogPage();
   renderWeightCard();
   renderCalendar();
 });
@@ -2252,12 +2221,12 @@ document.getElementById("record-meal-save").addEventListener("click", ()=>{
   if(!slot){ alert("朝食・昼食・夕食・夜食・間食のいずれかを選んでください"); return; }
   if(!level){ alert("食べ過ぎ・普通・軽め・絶食のいずれかを選んでください"); return; }
   const time = document.getElementById("record-meal-time").value || nowTimeStr();
-  if(!state.logs[recordSelectedDate]) state.logs[recordSelectedDate] = [];
-  state.logs[recordSelectedDate].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
+  if(!state.logs[lifelogSelectedDate]) state.logs[lifelogSelectedDate] = [];
+  state.logs[lifelogSelectedDate].push({id:"m"+Date.now()+Math.random().toString(36).slice(2,6), time, slot, level});
   saveState();
   clearSelected("record-slot-grid");
   clearSelected("record-level-grid");
-  renderRecordPage();
+  renderLifelogPage();
   renderCalendar();
   renderCharacterView();
 });
@@ -2382,6 +2351,14 @@ let lifelogSelectedDate = todayStr();
 
 function renderLifelogPage(){
   populateDateSelect("lifelog-date-select", lifelogSelectedDate);
+  updateStatusBanner(lifelogSelectedDate, "record-status-banner");
+
+  const w = state.weights[lifelogSelectedDate] ?? null;
+  document.getElementById("record-weight-input").value = w ?? "";
+  setSavedValueDisplay("record-weight-saved", w, v=>`${v}kg`);
+  renderRecordWeightNote();
+  document.getElementById("record-meal-time").value = nowTimeStr();
+  renderMealEntriesInto(lifelogSelectedDate, "record-meal-entries-list", renderLifelogPage);
 
   const sleepEntry = state.sleep[lifelogSelectedDate];
   document.getElementById("sleep-hours").value = sleepEntry ? sleepEntry.hours : "";
@@ -2608,7 +2585,6 @@ function switchView(name){
     v.classList.toggle("active", v.id==="view-"+name);
   });
   if(name==="cal") renderCalendar();
-  if(name==="record"){ recordSelectedDate = todayStr(); renderRecordPage(); }
   if(name==="exercise"){ exerciseSelectedDate = todayStr(); renderExercisePage(); }
   if(name==="lifelog"){ lifelogSelectedDate = todayStr(); renderLifelogPage(); }
   if(name==="history") renderHistoryPage();
@@ -2623,7 +2599,6 @@ function renderAll(){
   renderWeightCard();
   renderCalendar();
   renderSettings();
-  renderRecordPage();
   renderExercisePage();
   renderLifelogPage();
   renderHistoryPage();
