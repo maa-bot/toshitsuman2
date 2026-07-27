@@ -1404,6 +1404,7 @@ function allActivityDatesSorted(cutoff){
   addDatedList(state.reading);
   addDatedObj(state.stress);
   addDatedList(state.challenges);
+  addDatedObj(state.battles);
   return Array.from(set).sort();
 }
 
@@ -1561,7 +1562,6 @@ function simulateHpMp(cutoff, maxHp, maxMp){
       if(sleepEntry.quality==="good") hp += 5;
       else if(sleepEntry.quality==="poor") hp -= 5;
     }
-    hp = Math.max(0, Math.min(maxHp, hp));
 
     const restCount = (state.rests[ds]||[]).length;
     mp += restCount*8;
@@ -1569,6 +1569,14 @@ function simulateHpMp(cutoff, maxHp, maxMp){
     if(restCount===0) mp -= 3;
     const stressEntry = state.stress[ds];
     if(stressEntry && stressEntry.rating==="hard") mp -= 5;
+
+    const battle = state.battles[ds];
+    if(battle){
+      hp -= battle.hpLost || 0;
+      mp -= battle.mpLost || 0;
+    }
+
+    hp = Math.max(0, Math.min(maxHp, hp));
     mp = Math.max(0, Math.min(maxMp, mp));
 
     d.setDate(d.getDate()+1);
@@ -2515,12 +2523,10 @@ function getOrCreateBattle(dateStr){
       enemyKey: enemy.key,
       enemyHp: enemy.level*12,
       enemyMaxHp: enemy.level*12,
-      hp: rpg.hp,
-      maxHp: rpg.maxHp,
-      mp: rpg.mp,
-      maxMp: rpg.maxMp,
       shieldArmed: false,
       defeated: false,
+      hpLost: 0,
+      mpLost: 0,
       log: [],
     };
     saveState();
@@ -2544,8 +2550,9 @@ function renderSlimeSVG(enemy){
 
 document.getElementById("battle-shield-toggle").addEventListener("click", ()=>{
   const battle = getOrCreateBattle(todayStr());
-  if(battle.defeated) return;
-  if(!battle.shieldArmed && battle.mp<10){ alert("MPが足りません"); return; }
+  const rpg = computeRPGState();
+  if(battle.defeated || rpg.hp<=0) return;
+  if(!battle.shieldArmed && rpg.mp<10){ alert("MPが足りません"); return; }
   battle.shieldArmed = !battle.shieldArmed;
   saveState();
   renderBattlePage();
@@ -2557,14 +2564,14 @@ document.querySelectorAll("#battle-hand-grid .level-btn").forEach(btn=>{
 
 function playHand(hand){
   const battle = getOrCreateBattle(todayStr());
-  if(battle.defeated) return;
+  const rpg = computeRPGState();
+  if(battle.defeated || rpg.hp<=0) return;
   const enemy = ENEMIES.find(e=>e.key===battle.enemyKey);
   const enemyHand = ["rock","scissors","paper"][Math.floor(Math.random()*3)];
   let resultText;
   if(hand===enemyHand){
     resultText = "あいこ";
   }else if(handBeats(hand, enemyHand)){
-    const rpg = computeRPGState();
     const dmg = 10 + Math.floor(rpg.atk/4);
     battle.enemyHp = Math.max(0, battle.enemyHp - dmg);
     resultText = `勝利！${enemy.name}に${dmg}ダメージ`;
@@ -2573,13 +2580,13 @@ function playHand(hand){
       resultText += ` ― ${enemy.name}を撃破！(+15 EXP)`;
     }
   }else{
-    if(battle.shieldArmed && battle.mp>=10){
-      battle.mp -= 10;
+    if(battle.shieldArmed && rpg.mp>=10){
+      battle.mpLost += 10;
       battle.shieldArmed = false;
       resultText = "魔法シールドで防御した！ダメージ無効";
     }else{
-      battle.hp = Math.max(0, battle.hp-8);
-      battle.mp = Math.max(0, battle.mp-5);
+      battle.hpLost += 8;
+      battle.mpLost += 5;
       battle.shieldArmed = false;
       resultText = "敗北…HPとMPが減った";
     }
@@ -2588,11 +2595,13 @@ function playHand(hand){
   battle.log = battle.log.slice(0,6);
   saveState();
   renderBattlePage();
-  if(battle.defeated){ renderCharacterView(); renderCalendar(); }
+  renderCharacterView();
+  renderCalendar();
 }
 
 function renderBattlePage(){
   const battle = getOrCreateBattle(todayStr());
+  const rpg = computeRPGState();
   const enemy = ENEMIES.find(e=>e.key===battle.enemyKey);
 
   document.getElementById("enemy-level-label").textContent = `Lv.${enemy.level}`;
@@ -2603,25 +2612,29 @@ function renderBattlePage(){
   document.getElementById("enemy-hp-bar").style.width = (enemyHpRatio*100)+"%";
   document.getElementById("enemy-hp-label").textContent = `HP ${battle.enemyHp} / ${battle.enemyMaxHp}`;
 
-  const hpRatio = battle.maxHp>0 ? battle.hp/battle.maxHp : 0;
-  document.getElementById("battle-hp-bar").style.width = (hpRatio*100)+"%";
-  document.getElementById("battle-hp-label").textContent = `HP ${battle.hp} / ${battle.maxHp}`;
-  const mpRatio = battle.maxMp>0 ? battle.mp/battle.maxMp : 0;
+  document.getElementById("battle-hp-bar").style.width = (rpg.hpRatio*100)+"%";
+  document.getElementById("battle-hp-label").textContent = `HP ${rpg.hp} / ${rpg.maxHp}`;
+  const mpRatio = rpg.maxMp>0 ? rpg.mp/rpg.maxMp : 0;
   document.getElementById("battle-mp-bar").style.width = (mpRatio*100)+"%";
-  document.getElementById("battle-mp-label").textContent = `MP ${battle.mp} / ${battle.maxMp}`;
+  document.getElementById("battle-mp-label").textContent = `MP ${rpg.mp} / ${rpg.maxMp}`;
 
+  const playerDown = rpg.hp<=0;
   const shieldBtn = document.getElementById("battle-shield-toggle");
   shieldBtn.textContent = battle.shieldArmed ? "🛡️ シールド発動中(次の負けを無効化)" : "🛡️ 魔法シールドを構える (MP10)";
-  shieldBtn.disabled = battle.defeated;
-  shieldBtn.style.opacity = (battle.defeated || (battle.mp<10 && !battle.shieldArmed)) ? "0.5" : "1";
+  shieldBtn.disabled = battle.defeated || playerDown;
+  shieldBtn.style.opacity = (battle.defeated || playerDown || (rpg.mp<10 && !battle.shieldArmed)) ? "0.5" : "1";
 
-  document.querySelectorAll("#battle-hand-grid .level-btn").forEach(b=>{ b.disabled = battle.defeated; });
+  document.querySelectorAll("#battle-hand-grid .level-btn").forEach(b=>{ b.disabled = battle.defeated || playerDown; });
 
   const banner = document.getElementById("battle-result-banner");
   if(battle.defeated){
     banner.style.display = "block";
     banner.textContent = `${enemy.name}を撃破した！`;
     banner.className = "day-status-banner banner-good";
+  }else if(playerDown){
+    banner.style.display = "block";
+    banner.textContent = "HPが0になった…休んで回復してから挑もう";
+    banner.className = "day-status-banner banner-bad";
   }else{
     banner.style.display = "none";
   }
