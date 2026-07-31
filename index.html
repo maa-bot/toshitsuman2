@@ -385,8 +385,10 @@
 
   /* ---- map / stamp rally ---- */
   .jp-map-svg{width:100%; height:auto; display:block;}
-  .pref-dot{fill:var(--panel2); stroke:var(--border); stroke-width:1.2;}
+  .pref-dot-g{cursor:pointer;}
+  .pref-dot{fill:var(--panel2); stroke:var(--border); stroke-width:1.2; transition:r .15s;}
   .pref-dot.achieved{fill:var(--good); stroke:#fff; stroke-width:1;}
+  .pref-dot.selected{stroke:var(--accent); stroke-width:2.5;}
   .pref-stamp{font-size:8px; fill:#123018; pointer-events:none;}
   .okinawa-inset-box{fill:none; stroke:var(--border); stroke-width:1; stroke-dasharray:3 2;}
   .inset-label{font-size:8px; fill:var(--muted);}
@@ -1078,6 +1080,7 @@
         <div class="stat-box"><div class="num" id="map-achieved-count">0 / 47</div><div class="label">達成した都道府県</div></div>
       </div>
       <p class="setting-note" id="map-stride-note"></p>
+      <p class="setting-note" id="map-record-period"></p>
     </div>
 
     <div class="card">
@@ -1093,7 +1096,12 @@
 
     <div class="card">
       <h2>都道府県1周スタンプ帳</h2>
-      <div id="pref-progress-list"></div>
+      <p class="setting-note" style="margin-top:0;">地図の都道府県をタップするか、下から選ぶとスタンプ帳が表示されます。</p>
+      <div class="date-select-row">
+        <label for="map-pref-select">都道府県を選択</label>
+        <select id="map-pref-select"></select>
+      </div>
+      <div id="pref-detail-card"></div>
     </div>
   </section>
 
@@ -2629,6 +2637,12 @@ function totalStepsAllTime(state){
   return n;
 }
 
+function stepsRecordPeriodLabel(state){
+  const dates = Object.keys(state.steps).filter(d=> state.steps[d]!=null).sort();
+  if(dates.length===0) return "まだ歩数の記録がありません";
+  return `記録期間: ${shortDate(dates[0])} 〜 ${shortDate(dates[dates.length-1])}`;
+}
+
 function computeWalkState(state){
   const strideM = strideMetersFor(state);
   const totalSteps = totalStepsAllTime(state);
@@ -2646,16 +2660,17 @@ function computeWalkState(state){
   return {strideM, totalSteps, totalKm, list, kyushuAchieved, kyushuRemainingKm, kyushuEquivSteps};
 }
 
-function renderJapanMapSVG(w){
+function renderJapanMapSVG(w, selectedKey){
   const achievedSet = new Set(w.list.filter(p=>p.achieved).map(p=>p.key));
   const loopPts = KYUSHU_LOOP_KEYS.map(k=> PREFECTURES.find(p=>p.key===k));
   const loopPath = loopPts.map(p=>`${p.x},${p.y}`).join(" ");
   const dots = PREFECTURES.map(p=>{
     const on = achievedSet.has(p.key);
+    const sel = p.key===selectedKey;
     return `
-      <g>
+      <g class="pref-dot-g" data-pref-key="${p.key}">
         <title>${p.name}: 1周 約${p.loopKm}km${on? " (達成)":""}</title>
-        <circle cx="${p.x}" cy="${p.y}" r="6.5" class="pref-dot ${on?"achieved":""}"/>
+        <circle cx="${p.x}" cy="${p.y}" r="${sel?8.5:6.5}" class="pref-dot ${on?"achieved":""} ${sel?"selected":""}"/>
         ${on? `<text x="${p.x}" y="${p.y+3}" class="pref-stamp" text-anchor="middle">★</text>` : ""}
       </g>
     `;
@@ -2670,15 +2685,23 @@ function renderJapanMapSVG(w){
   `;
 }
 
+let mapSelectedPrefKey = null;
+
 function renderMapPage(){
   const w = computeWalkState(state);
   const achievedCount = w.list.filter(p=>p.achieved).length;
+
+  if(!mapSelectedPrefKey || !PREFECTURES.some(p=>p.key===mapSelectedPrefKey)){
+    const nextTarget = w.list.find(p=>!p.achieved);
+    mapSelectedPrefKey = nextTarget ? nextTarget.key : w.list[w.list.length-1].key;
+  }
 
   document.getElementById("map-total-km").textContent = w.totalKm.toFixed(1);
   document.getElementById("map-total-steps").textContent = w.totalSteps.toLocaleString();
   document.getElementById("map-achieved-count").textContent = `${achievedCount} / ${PREFECTURES.length}`;
   document.getElementById("map-stride-note").textContent =
     `歩幅の目安: 1歩 約${(w.strideM*100).toFixed(0)}cm${state.profile.heightCm ? "(設定した身長から算出)" : "(身長が未設定のため仮の値を使用)"}`;
+  document.getElementById("map-record-period").textContent = stepsRecordPeriodLabel(state);
 
   const kb = document.getElementById("kyushu-badge");
   kb.className = "kyushu-badge" + (w.kyushuAchieved ? " achieved" : "");
@@ -2686,22 +2709,39 @@ function renderMapPage(){
     ? `達成!九州一周(約${KYUSHU_LOOP_KM.toLocaleString()}km)を歩き切った!`
     : `九州一周(約${KYUSHU_LOOP_KM.toLocaleString()}km)まであと ${w.kyushuRemainingKm.toFixed(1)}km(約${Math.ceil(w.kyushuRemainingKm*1000/w.strideM).toLocaleString()}歩)`;
 
-  document.getElementById("jp-map-box").innerHTML = renderJapanMapSVG(w);
+  document.getElementById("jp-map-box").innerHTML = renderJapanMapSVG(w, mapSelectedPrefKey);
 
-  document.getElementById("pref-progress-list").innerHTML = w.list.map(p=>{
-    const pct = Math.min(100, (w.totalKm/p.loopKm)*100);
-    return `
-      <div class="pref-row ${p.achieved?"achieved":""}">
-        <div class="pref-row-top">
-          <span class="pref-row-name">${p.achieved?"🏅 ":""}${p.name}</span>
-          <span class="pref-row-km">1周 約${p.loopKm.toLocaleString()}km(約${p.equivSteps.toLocaleString()}歩)</span>
-        </div>
-        <div class="bar-outer"><div class="bar-inner" style="width:${pct}%; background:${p.achieved?"var(--good)":"var(--accent)"};"></div></div>
-        <div class="pref-row-sub">${p.achieved ? "達成済み" : `残り 約${p.remainingKm.toFixed(1)}km(約${p.remainingSteps.toLocaleString()}歩)`}</div>
-      </div>
-    `;
+  const select = document.getElementById("map-pref-select");
+  select.innerHTML = PREFECTURES.map(p=>{
+    const achieved = w.list.find(x=>x.key===p.key).achieved;
+    return `<option value="${p.key}">${achieved?"🏅 ":""}${p.name}</option>`;
   }).join("");
+  select.value = mapSelectedPrefKey;
+
+  const p = w.list.find(x=>x.key===mapSelectedPrefKey);
+  const pct = Math.min(100, (w.totalKm/p.loopKm)*100);
+  document.getElementById("pref-detail-card").innerHTML = `
+    <div class="pref-row ${p.achieved?"achieved":""}">
+      <div class="pref-row-top">
+        <span class="pref-row-name">${p.achieved?"🏅 ":""}${p.name}</span>
+        <span class="pref-row-km">1周 約${p.loopKm.toLocaleString()}km(約${p.equivSteps.toLocaleString()}歩)</span>
+      </div>
+      <div class="bar-outer"><div class="bar-inner" style="width:${pct}%; background:${p.achieved?"var(--good)":"var(--accent)"};"></div></div>
+      <div class="pref-row-sub">${p.achieved ? "達成済み" : `残り 約${p.remainingKm.toFixed(1)}km(約${p.remainingSteps.toLocaleString()}歩)`}</div>
+    </div>
+  `;
 }
+
+document.getElementById("map-pref-select").addEventListener("change", (e)=>{
+  mapSelectedPrefKey = e.target.value;
+  renderMapPage();
+});
+document.getElementById("jp-map-box").addEventListener("click", (e)=>{
+  const g = e.target.closest("[data-pref-key]");
+  if(!g) return;
+  mapSelectedPrefKey = g.dataset.prefKey;
+  renderMapPage();
+});
 
 function hashStr(s){
   let h = 0;
