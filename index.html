@@ -413,6 +413,8 @@
   .pref-row-km{font-size:11px; color:var(--muted); white-space:nowrap;}
   .pref-row-sub{font-size:11px; color:var(--muted); margin-top:4px;}
   .pref-row.achieved .pref-row-sub{color:var(--good); font-weight:700;}
+  .pref-row-days{font-size:11px; color:var(--accent); margin-top:4px; font-weight:700;}
+  .pref-row-days.muted{color:var(--muted); font-weight:400;}
 
   /* ---- history charts ---- */
   .chart-caption{
@@ -2637,27 +2639,41 @@ function totalStepsAllTime(state){
   return n;
 }
 
+function stepsRecordDates(state){
+  return Object.keys(state.steps).filter(d=> state.steps[d]!=null).sort();
+}
+
 function stepsRecordPeriodLabel(state){
-  const dates = Object.keys(state.steps).filter(d=> state.steps[d]!=null).sort();
+  const dates = stepsRecordDates(state);
   if(dates.length===0) return "まだ歩数の記録がありません";
   return `記録期間: ${shortDate(dates[0])} 〜 ${shortDate(dates[dates.length-1])}`;
+}
+
+function avgDailyKmFromHistory(state, strideM, totalKm){
+  const dates = stepsRecordDates(state);
+  if(dates.length===0) return 0;
+  const daysElapsed = Math.max(1, Math.round((parseDateStr(todayStr()) - parseDateStr(dates[0]))/86400000) + 1);
+  return totalKm / daysElapsed;
 }
 
 function computeWalkState(state){
   const strideM = strideMetersFor(state);
   const totalSteps = totalStepsAllTime(state);
   const totalKm = totalSteps * strideM / 1000;
+  const avgDailyKm = avgDailyKmFromHistory(state, strideM, totalKm);
   const list = PREFECTURES.map(p=>{
     const achieved = totalKm >= p.loopKm;
     const remainingKm = Math.max(0, p.loopKm - totalKm);
     const remainingSteps = Math.ceil(remainingKm*1000/strideM);
     const equivSteps = Math.round(p.loopKm*1000/strideM);
-    return Object.assign({}, p, {achieved, remainingKm, remainingSteps, equivSteps});
+    const remainingDays = achieved ? 0 : (avgDailyKm>0 ? Math.ceil(remainingKm/avgDailyKm) : null);
+    return Object.assign({}, p, {achieved, remainingKm, remainingSteps, equivSteps, remainingDays});
   }).sort((a,b)=> a.loopKm - b.loopKm);
   const kyushuAchieved = totalKm >= KYUSHU_LOOP_KM;
   const kyushuRemainingKm = Math.max(0, KYUSHU_LOOP_KM - totalKm);
   const kyushuEquivSteps = Math.round(KYUSHU_LOOP_KM*1000/strideM);
-  return {strideM, totalSteps, totalKm, list, kyushuAchieved, kyushuRemainingKm, kyushuEquivSteps};
+  const kyushuRemainingDays = kyushuAchieved ? 0 : (avgDailyKm>0 ? Math.ceil(kyushuRemainingKm/avgDailyKm) : null);
+  return {strideM, totalSteps, totalKm, avgDailyKm, list, kyushuAchieved, kyushuRemainingKm, kyushuEquivSteps, kyushuRemainingDays};
 }
 
 function renderJapanMapSVG(w, selectedKey){
@@ -2707,7 +2723,7 @@ function renderMapPage(){
   kb.className = "kyushu-badge" + (w.kyushuAchieved ? " achieved" : "");
   document.getElementById("kyushu-badge-status").textContent = w.kyushuAchieved
     ? `達成!九州一周(約${KYUSHU_LOOP_KM.toLocaleString()}km)を歩き切った!`
-    : `九州一周(約${KYUSHU_LOOP_KM.toLocaleString()}km)まであと ${w.kyushuRemainingKm.toFixed(1)}km(約${Math.ceil(w.kyushuRemainingKm*1000/w.strideM).toLocaleString()}歩)`;
+    : `九州一周(約${KYUSHU_LOOP_KM.toLocaleString()}km)まであと ${w.kyushuRemainingKm.toFixed(1)}km(約${Math.ceil(w.kyushuRemainingKm*1000/w.strideM).toLocaleString()}歩)${w.kyushuRemainingDays!=null ? ` ・ このペースならあと約${w.kyushuRemainingDays}日` : ""}`;
 
   document.getElementById("jp-map-box").innerHTML = renderJapanMapSVG(w, mapSelectedPrefKey);
 
@@ -2720,6 +2736,10 @@ function renderMapPage(){
 
   const p = w.list.find(x=>x.key===mapSelectedPrefKey);
   const pct = Math.min(100, (w.totalKm/p.loopKm)*100);
+  const daysNote = p.achieved ? ""
+    : p.remainingDays!=null
+      ? `<div class="pref-row-days">これまでの平均ペース(1日約${w.avgDailyKm.toFixed(2)}km)なら あと約${p.remainingDays.toLocaleString()}日で達成</div>`
+      : `<div class="pref-row-days muted">歩数の記録がまだ少ないため、達成までの日数は計算できません</div>`;
   document.getElementById("pref-detail-card").innerHTML = `
     <div class="pref-row ${p.achieved?"achieved":""}">
       <div class="pref-row-top">
@@ -2728,6 +2748,7 @@ function renderMapPage(){
       </div>
       <div class="bar-outer"><div class="bar-inner" style="width:${pct}%; background:${p.achieved?"var(--good)":"var(--accent)"};"></div></div>
       <div class="pref-row-sub">${p.achieved ? "達成済み" : `残り 約${p.remainingKm.toFixed(1)}km(約${p.remainingSteps.toLocaleString()}歩)`}</div>
+      ${daysNote}
     </div>
   `;
 }
